@@ -96,6 +96,10 @@ export class QuestionRepository {
     );
     return rows.map((q) => ({
       id: q.ID,
+      kind: "knowledge" as const,
+      source: null,
+      confidence: null,
+      anchorQuote: null,
       text: q.QUESTION_TEXT,
       topicId: q.TOPIC_ID,
       topicName: q.NAME,

@@ -1,0 +1,92 @@
+{
+  "version": "1.0.0",
+  "promptVersion": "1.0.0",
+  "confidenceMin": 0.65,
+  "intervalConfidenceMin": 0.6,
+  "resumeConfidenceMin": 0.6,
+  "minEffectiveChars": 20,
+  "coverageMin": 0.5,
+  "intervalRadius": 8,
+  "equationTolerance": 0.5,
+  "dimensionDeductionRatio": 0.5,
+  "dimensions": {
+    "CONTENT": {
+      "rawMax": 40,
+      "weight": 40
+    },
+    "RESUME": {
+      "rawMax": 15,
+      "weight": 15
+    },
+    "FIT": {
+      "rawMax": 10,
+      "weight": 10
+    },
+    "FLUENCY": {
+      "rawMax": 100,
+      "weight": 15
+    },
+    "FILLER": {
+      "rawMax": 100,
+      "weight": 10
+    },
+    "BODY": {
+      "rawMax": 100,
+      "weight": 0
+    }
+  },
+  "events": {
+    "CNT-001": {
+      "dimension": "CONTENT",
+      "kind": "deduction",
+      "points": 15,
+      "cap": 15
+    },
+    "CNT-002": {
+      "dimension": "CONTENT",
+      "kind": "deduction",
+      "points": 8,
+      "cap": 8
+    },
+    "RES-001": {
+      "dimension": "RESUME",
+      "kind": "deduction",
+      "points": 6,
+      "cap": 6,
+      "requiresFollowUp": true
+    },
+    "RES-002": {
+      "dimension": "RESUME",
+      "kind": "deduction",
+      "points": 12,
+      "cap": 12,
+      "requiresResumeQuote": true
+    },
+    "FIT-001": {
+      "dimension": "FIT",
+      "kind": "deduction",
+      "points": 10,
+      "cap": 10,
+      "requiresDictionary": true
+    },
+    "BON-001": {
+      "dimension": "CONTENT",
+      "kind": "bonus",
+      "points": 2,
+      "cap": 6
+    },
+    "BON-002": {
+      "dimension": "CONTENT",
+      "kind": "bonus",
+      "points": 1,
+      "cap": 4
+    },
+    "BON-003": {
+      "dimension": "RESUME",
+      "kind": "bonus",
+      "points": 2,
+      "cap": 6,
+      "requiresFollowUp": true
+    }
+  }
+}

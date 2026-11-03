@@ -1,5 +1,6 @@
 import {
   Body,
+  Delete,
   Controller,
   Get,
   Inject,
@@ -14,7 +15,13 @@ import {
 } from "@nestjs/common";
 import { FileInterceptor } from "@nestjs/platform-express";
 import type { Response } from "express";
-import { confirmResumeInput } from "@face/shared";
+import { ResumeAiService } from "./resume-ai.service.js";
+import { DataService } from "../workspace/data.service.js";
+import {
+  confirmResumeInput,
+  pasteResumeInput,
+  deleteConfirmation,
+} from "@face/shared";
 import { AuthGuard } from "../auth/auth.guard.js";
 import {
   ApiError,
@@ -28,6 +35,8 @@ import { ResumeService } from "./resume.service.js";
 @Controller("api/v1/resumes")
 export class ResumeController {
   constructor(
+    @Inject(ResumeAiService) private readonly ai: ResumeAiService,
+    @Inject(DataService) private readonly data: DataService,
     @Inject(ResumeRepository) private readonly repo: ResumeRepository,
     @Inject(ResumeService) private readonly service: ResumeService,
   ) {}
@@ -46,6 +55,24 @@ export class ResumeController {
   ) {
     if (!file) throw new ApiError("E_FILE_MISSING", "请选择简历文件");
     return this.service.upload(request.account.id, file);
+  }
+  @Post("paste") paste(@Req() req: AccountRequest, @Body() body: unknown) {
+    const value = input(pasteResumeInput, body);
+    return this.service.paste(req.account.id, value.text, value.filename);
+  }
+  @Post(":id/analyze") analyze(
+    @Req() req: AccountRequest,
+    @Param("id") id: string,
+  ) {
+    return this.ai.analyze(req.account.id, id);
+  }
+  @Delete(":id") remove(
+    @Req() req: AccountRequest,
+    @Param("id") id: string,
+    @Body() body: unknown,
+  ) {
+    input(deleteConfirmation, body);
+    return this.data.removeResume(req.account.id, id);
   }
   @Get(":id") async get(
     @Req() request: AccountRequest,

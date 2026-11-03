@@ -65,6 +65,31 @@ export class BaiduOcr {
     }
     return pages;
   }
+  async readImage(buffer: Buffer) {
+    if (!config.BAIDU_AK || !config.BAIDU_SK)
+      throw new ApiError("E_OCR_CONFIG", "请先配置百度OCR凭证");
+    const body = new URLSearchParams({
+      image: buffer.toString("base64"),
+      detect_direction: "true",
+    });
+    if (Buffer.byteLength(body.toString()) > 4 * 1024 * 1024)
+      throw new ApiError("E_OCR_SIZE", "图片编码超过百度4MB限制，请压缩后重试");
+    const token = await this.accessToken();
+    const result = pageResult.safeParse(
+      await this.call(
+        `https://aip.baidubce.com/rest/2.0/ocr/v1/${config.BAIDU_OCR_ENDPOINT}?access_token=${encodeURIComponent(token)}`,
+        body,
+      ),
+    );
+    if (!result.success)
+      throw new ApiError("E_OCR_UPSTREAM", "百度OCR未返回有效文字");
+    return [
+      {
+        page: 1,
+        text: result.data.words_result.map((word) => word.words).join("\n"),
+      },
+    ];
+  }
   private async accessToken() {
     if (this.token && this.token.until > Date.now()) return this.token.value;
     const body = new URLSearchParams({

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { randomUUID } from "node:crypto";
 import {
   publicQuestionSchema,
+  reportSchema,
   practiceSchema,
   type CreatePractice,
   type Practice,
@@ -17,6 +18,7 @@ const session = z.object({
   WARNINGS_JSON: z.string(),
   CREATED_AT: z.date(),
   UPDATED_AT: z.date(),
+  CURRENT_INDEX: z.number(),
 });
 const turn = z.object({
   ID: z.string(),
@@ -24,6 +26,7 @@ const turn = z.object({
   QUESTION_JSON: z.string(),
   ANSWER_TEXT: z.string().nullable(),
   STATUS: z.string(),
+  ANSWER_REVISION: z.number(),
 });
 @Injectable()
 export class PracticeRepository {
@@ -32,10 +35,11 @@ export class PracticeRepository {
     owner: string,
     body: CreatePractice,
     questions: z.infer<typeof publicQuestionSchema>[],
+    snapshot: { text: string; analysis: unknown } | null = null,
   ) {
     const id = randomUUID();
     const warnings = questions.some((q) => q.stage === "seed")
-      ? ["占位题库，质量未校验；本轮只保存回答，不评分"]
+      ? ["占位题库，质量未校验"]
       : [];
     await this.db.transaction(async (runner) => {
       await this.db.execute(
@@ -47,16 +51,19 @@ export class PracticeRepository {
           JSON.stringify({
             weights: body.weights,
             count: body.count,
-            mode: "knowledge",
+            mode: body.mode ?? "knowledge",
+            jobTitle: body.jobTitle ?? "",
+            order: body.order ?? "alternate",
           }),
           JSON.stringify({
             knowledge: questions,
+            resumeSnapshot: snapshot,
             order: questions.map((q) => q.id),
           }),
           JSON.stringify({
             schemaVersion: 1,
             bank: "1.0.0-seed",
-            scoring: "disabled",
+            scoring: "1.0.0",
           }),
           JSON.stringify(warnings),
         ],
@@ -80,24 +87,39 @@ export class PracticeRepository {
     const value = sessions[0];
     if (!value) throw new ApiError("E_NOT_FOUND", "未找到这场练习", 404);
     const turns = await this.db.rows(
-      "SELECT id,turn_index,question_json,answer_text,status FROM face_app.face_turns WHERE session_id=:1 ORDER BY turn_index",
+      "SELECT id,turn_index,question_json,answer_text,status,answer_revision FROM face_app.face_turns WHERE session_id=:1 ORDER BY turn_index",
       [id],
       turn,
     );
     const job = z
-      .object({ weights: z.record(z.string(), z.number()) })
+      .object({
+        weights: z.record(z.string(), z.number()),
+        mode: z.enum(["knowledge", "interview"]).default("knowledge"),
+        jobTitle: z.string().default(""),
+        order: z.enum(["alternate", "knowledge_first"]).default("alternate"),
+      })
       .parse(JSON.parse(value.JOB_PROFILE_JSON) as unknown);
     return practiceSchema.parse({
       id: value.ID,
       status: value.STATUS,
       resumeId: value.RESUME_ID,
       weights: job.weights,
+      mode: job.mode,
+      jobTitle: job.jobTitle,
+      order: job.order,
+      currentIndex: value.CURRENT_INDEX,
+      resumeQuestionCount: turns.filter(
+        (t) =>
+          publicQuestionSchema.parse(JSON.parse(t.QUESTION_JSON) as unknown)
+            .kind === "resume",
+      ).length,
       turns: turns.map((t) => ({
         id: t.ID,
         index: t.TURN_INDEX,
         question: JSON.parse(t.QUESTION_JSON) as unknown,
         answerText: t.ANSWER_TEXT ?? "",
         status: t.STATUS,
+        answerRevision: t.ANSWER_REVISION,
       })),
       warnings: JSON.parse(value.WARNINGS_JSON) as unknown,
       createdAt: value.CREATED_AT.toISOString(),
@@ -106,20 +128,54 @@ export class PracticeRepository {
   }
   async list(owner: string) {
     const rows = await this.db.rows(
-      "SELECT s.id,s.status,s.created_at,s.updated_at,(SELECT COUNT(*) FROM face_app.face_turns t WHERE t.session_id=s.id) question_count,(SELECT COUNT(*) FROM face_app.face_turns t WHERE t.session_id=s.id AND t.status='answered') answered_count FROM face_app.face_sessions s WHERE s.owner_id=:1 AND s.delete_requested_at IS NULL ORDER BY s.updated_at DESC",
+      "SELECT s.id,s.status,s.current_index,s.job_profile_json,s.created_at,s.updated_at,(SELECT r.payload_json FROM face_app.face_reports r WHERE r.session_id=s.id ORDER BY revision DESC FETCH FIRST 1 ROW ONLY) report_json,(SELECT COUNT(*) FROM face_app.face_turns t WHERE t.session_id=s.id AND t.status='skipped') skipped,(SELECT NVL(SUM(t.answer_revision),0) FROM face_app.face_turns t WHERE t.session_id=s.id) revision_sum,(SELECT COUNT(*) FROM face_app.face_turns t WHERE t.session_id=s.id) question_count,(SELECT COUNT(*) FROM face_app.face_turns t WHERE t.session_id=s.id AND t.answer_text IS NOT NULL) answered_count FROM face_app.face_sessions s WHERE s.owner_id=:1 AND s.delete_requested_at IS NULL ORDER BY s.updated_at DESC",
       [owner],
       session
         .pick({ ID: true, STATUS: true, CREATED_AT: true, UPDATED_AT: true })
-        .extend({ QUESTION_COUNT: z.number(), ANSWERED_COUNT: z.number() }),
+        .extend({
+          QUESTION_COUNT: z.number(),
+          ANSWERED_COUNT: z.number(),
+          SKIPPED: z.number(),
+          CURRENT_INDEX: z.number(),
+          JOB_PROFILE_JSON: z.string(),
+          REPORT_JSON: z.string().nullable(),
+          REVISION_SUM: z.number(),
+        }),
     );
-    return rows.map((s) => ({
-      id: s.ID,
-      status: s.STATUS,
-      count: s.QUESTION_COUNT,
-      answered: s.ANSWERED_COUNT,
-      createdAt: s.CREATED_AT.toISOString(),
-      updatedAt: s.UPDATED_AT.toISOString(),
-    }));
+    return rows.map((s) => {
+      const job = z
+        .object({
+          jobTitle: z.string().default(""),
+          mode: z.enum(["knowledge", "interview"]).default("knowledge"),
+        })
+        .parse(JSON.parse(s.JOB_PROFILE_JSON) as unknown);
+      const report = s.REPORT_JSON
+        ? reportSchema.parse(JSON.parse(s.REPORT_JSON) as unknown)
+        : null;
+      return {
+        id: s.ID,
+        status: s.STATUS,
+        count: s.QUESTION_COUNT,
+        answered: s.ANSWERED_COUNT,
+        skipped: s.SKIPPED,
+        currentIndex: s.CURRENT_INDEX,
+        ...job,
+        latestReport: report
+          ? {
+              id: report.id,
+              revision: report.revision,
+              scoreKind: report.scoreKind,
+              totalScore: report.totalScore,
+              totalScoreRange: report.totalScoreRange,
+              stale:
+                report.turns.reduce((sum, t) => sum + t.answerRevision, 0) !==
+                s.REVISION_SUM,
+            }
+          : null,
+        createdAt: s.CREATED_AT.toISOString(),
+        updatedAt: s.UPDATED_AT.toISOString(),
+      };
+    });
   }
   async answer(owner: string, id: string, turnId: string, text: string) {
     await this.db.transaction(async (runner) => {
@@ -139,12 +195,12 @@ export class PracticeRepository {
       );
       if (!turns.length) throw new ApiError("E_NOT_FOUND", "未找到这道题", 404);
       await this.db.execute(
-        "UPDATE face_app.face_turns SET answer_text=:1,status='answered',answer_revision=answer_revision+1,updated_at=SYSTIMESTAMP WHERE id=:2 AND session_id=:3",
+        "UPDATE face_app.face_turns SET answer_text=:1,status='answered',ai_result_json=NULL,score_json=NULL,answer_revision=answer_revision+1,updated_at=SYSTIMESTAMP WHERE id=:2 AND session_id=:3",
         [text, turnId, id],
         runner,
       );
       const counts = await this.db.rows(
-        "SELECT COUNT(*) remaining,MIN(turn_index) next_index FROM face_app.face_turns WHERE session_id=:1 AND status<>'answered'",
+        "SELECT COUNT(*) remaining,MIN(turn_index) next_index FROM face_app.face_turns WHERE session_id=:1 AND status NOT IN ('answered','scored','needs_review','skipped')",
         [id],
         z.object({ REMAINING: z.number(), NEXT_INDEX: z.number().nullable() }),
         runner,

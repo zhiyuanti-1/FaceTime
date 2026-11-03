@@ -5,8 +5,8 @@
   "type": "module",
   "exports": {
     ".": {
-      "types": "./dist/core.d.ts",
-      "import": "./dist/core.js"
+      "types": "./dist/contracts/core.d.ts",
+      "import": "./dist/contracts/core.js"
     }
   },
   "scripts": {

@@ -7,6 +7,10 @@ dotenv({
   quiet: true,
 });
 const schema = z.object({
+  DEEPSEEK_API_KEY: z.string().default(""),
+  DEEPSEEK_MODEL: z.string().default("deepseek-flash"),
+  DEEPSEEK_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
+  DEEPSEEK_MAX_INPUT_CHARS: z.coerce.number().int().positive().default(80000),
   DB_USER: z.string().min(1),
   DB_PASSWORD: z.string().min(1),
   DB_CONNECT_STRING: z.string().min(1),

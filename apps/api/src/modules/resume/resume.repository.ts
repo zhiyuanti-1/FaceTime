@@ -1,6 +1,10 @@
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
-import { resumeListSchema, type Resume } from "@face/shared";
+import {
+  resumeListSchema,
+  resumeAnalysisSchema,
+  type Resume,
+} from "@face/shared";
 import { OracleStore } from "../../infrastructure/database.js";
 import { ApiError } from "../../infrastructure/http.js";
 const row = z.object({
@@ -16,6 +20,8 @@ const row = z.object({
   ORIGINAL_PATH: z.string(),
   CREATED_AT: z.date(),
   UPDATED_AT: z.date(),
+  NEEDS_REVIEW: z.number(),
+  PROFILE_JSON: z.string().nullable(),
 });
 const errors: Record<string, string> = {
   E_OCR_CONFIG: "百度OCR尚未配置，请填写后端.env后重启，再点击重新识别",
@@ -66,6 +72,10 @@ export class ResumeRepository {
         : null,
       createdAt: value.CREATED_AT.toISOString(),
       updatedAt: value.UPDATED_AT.toISOString(),
+      needsReview: value.NEEDS_REVIEW === 1,
+      analysis: value.PROFILE_JSON
+        ? resumeAnalysisSchema.parse(JSON.parse(value.PROFILE_JSON) as unknown)
+        : null,
     };
   }
   async insert(
@@ -74,10 +84,11 @@ export class ResumeRepository {
     name: string,
     source: string,
     path: string,
+    size = 0,
   ) {
     await this.db.execute(
-      "INSERT INTO face_app.face_resumes(id,owner_id,source_kind,original_filename,original_path,extraction_status) VALUES(:1,:2,:3,:4,:5,'processing')",
-      [id, owner, source, name, path],
+      "INSERT INTO face_app.face_resumes(id,owner_id,source_kind,original_filename,original_path,file_size_bytes,extraction_status) VALUES(:1,:2,:3,:4,:5,:6,'processing')",
+      [id, owner, source, name, path, size],
     );
   }
   async extracting(owner: string, id: string) {
@@ -109,7 +120,7 @@ export class ResumeRepository {
   async confirm(owner: string, id: string, text: string) {
     await this.get(owner, id);
     await this.db.execute(
-      "UPDATE face_app.face_resumes SET edited_text=:1,needs_review=0,updated_at=SYSTIMESTAMP WHERE owner_id=:2 AND id=:3",
+      "UPDATE face_app.face_resumes SET edited_text=:1,profile_json=NULL,needs_review=0,updated_at=SYSTIMESTAMP WHERE owner_id=:2 AND id=:3",
       [text, owner, id],
     );
     return this.dto(await this.get(owner, id));

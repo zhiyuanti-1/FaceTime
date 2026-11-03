@@ -1,3 +1,13 @@
+import { PracticeStateRepository } from "./modules/practice/practice-state.repository.js";
+import { AnswerScoringService } from "./modules/practice/answer-scoring.service.js";
+import { ReportRepository } from "./modules/practice/report.repository.js";
+import { ReportService } from "./modules/practice/report.service.js";
+import { ResumeAiService } from "./modules/resume/resume-ai.service.js";
+import { PreferencesRepository } from "./modules/workspace/preferences.repository.js";
+import { WorkspaceService } from "./modules/workspace/workspace.service.js";
+import { DataService } from "./modules/workspace/data.service.js";
+import { WorkspaceController } from "./modules/workspace/workspace.controller.js";
+import { DeepSeek } from "./providers/deepseek.js";
 import { Controller, Get, Inject, Module, UseGuards } from "@nestjs/common";
 import { config } from "./config.js";
 import { OracleStore } from "./infrastructure/database.js";
@@ -18,7 +28,7 @@ class SystemController {
   constructor(@Inject(OracleStore) private readonly db: OracleStore) {}
   @Get("health") async health() {
     await this.db.execute("SELECT 1 FROM dual");
-    return { ok: true, version: "0.2.0" };
+    return { ok: true, version: "0.3.0" };
   }
   @UseGuards(AuthGuard) @Get("v1/settings") settings() {
     return {
@@ -27,19 +37,29 @@ class SystemController {
       uploadMaxMb: config.UPLOAD_MAX_MB,
       pdfMaxPages: config.PDF_MAX_PAGES,
       database: "Oracle",
-      scoringEnabled: false,
+      scoringEnabled: true,
     };
   }
 }
 @Module({
   controllers: [
     SystemController,
+    WorkspaceController,
     AuthController,
     ResumeController,
     PracticeController,
   ],
   providers: [
     OracleStore,
+    PracticeStateRepository,
+    AnswerScoringService,
+    ReportRepository,
+    ReportService,
+    ResumeAiService,
+    PreferencesRepository,
+    WorkspaceService,
+    DataService,
+    DeepSeek,
     AuthService,
     AuthGuard,
     ResumeRepository,

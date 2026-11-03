@@ -1,6 +1,6 @@
 # Face · 面试练习室
 
-本机运行的简历核对与文字面试练习工具。当前已接通管理员登录、文档上传与持续存储、原文核对、数据库题库、手动权重、文字回答和练习记录。暂不评分、追问或生成面试报告。
+本机运行的简历核对与文字面试练习工具。当前已接通管理员登录、文档上传与持续存储、原文核对、数据库题库、手动权重、文字回答和练习记录。前端仍为011；012后端已新增IA v2工作台、个人中心、DeepSeek简历出题与评分报告接口，下一次对话再接前端。暂不实现追问/语音/动作，真实云联调尚未执行。
 
 ## 项目结构
 
@@ -8,9 +8,9 @@
 apps/web/           React + TypeScript + Vite 前端
 apps/api/           NestJS + TypeORM + Oracle 后端、迁移、本机私密配置
 apps/workers/       2.0 本地模型预留
-packages/shared/    跨端 Zod 契约、未来纯评分内核
+packages/shared/    跨端 Zod 契约、纯评分内核
 packages/content/   数据库初始化种子题库（200 题，未人工审核）
-packages/ai,rules/  未来提示词与规则版本资产
+packages/ai,rules/  版本化提示词与评分规则资产
 product/            产品需求与历史原型
 docs/              技术规范、流程、进度及归档
 scripts/            工程检查与本机集成验证
@@ -20,7 +20,7 @@ infra/              3.0 公网部署预留
 
 ## 启动
 
-要求 Node ≥22.13、npm、本机 Oracle FREEPDB1、已执行的 FACE_APP 迁移及 FACE_RUNTIME 运行账号。当前电脑已完成 001 / 005 建表；不要重复执行。其他电脑先按技术约束的数据库章节准备 schema 和迁移，禁止使用 SYS 运行应用。
+要求 Node ≥22.13、npm、本机 Oracle FREEPDB1、已执行的 FACE_APP 迁移及 FACE_RUNTIME 运行账号。当前电脑已完成 001 / 005 / 006 迁移；不要重复执行。其他电脑先按技术约束的数据库章节准备 schema 和迁移，禁止使用 SYS 运行应用。
 
 ```powershell
 npm ci
@@ -33,13 +33,14 @@ npm run dev
 
 ## 配置与存储
 
-唯一私密配置入口是 **apps/api/.env**，已被 Git 忽略。数据库连接、管理员账号/密码、百度 `BAIDU_AK` / `BAIDU_SK`、端口、大小限制都在此处维护，修改后重启服务。管理员初始口令仅在本机配置中，源码与模板不包含可用口令。修改管理员密码并重启会更新哈希、注销旧会话；修改数据库连接密码必须与 Oracle 账号实际密码一致，应用不会替你改数据库口令。
+唯一私密配置入口是 **apps/api/.env**，已被 Git 忽略。数据库连接、管理员账号/密码、百度 `BAIDU_AK` / `BAIDU_SK`、DeepSeek `DEEPSEEK_API_KEY` / `DEEPSEEK_MODEL`、端口、大小限制都在此处维护，修改后重启服务。管理员初始口令仅在本机配置中，源码与模板不包含可用口令。修改管理员密码并重启会更新哈希、注销旧会话；修改数据库连接密码必须与 Oracle 账号实际密码一致，应用不会替你改数据库口令。
 
 - DOCX / DOC / UTF-8 TXT：本机提取；扫描版 Word 请另存 PDF。
+- 后端新增粘贴文本与 PNG/JPEG 图片接口；图片同样经百度识别，前端入口下一对话接入。
 - PDF：确认发送后，由后端调用百度 OCR 逐页提取。未配置 AK/SK 时保留原件并显示失败原因，可配置后重新识别。
 - 识别原文可复制、导出 TXT；确认文本另存，不覆盖原文。
 - 原文件在被忽略的 `apps/api/data/resumes/<账号ID>/`；元数据、全文、修订和题目/回答在 Oracle。无需另配 NoSQL。
-- 当前不自动删除原件，也不实现删除入口；请同时备份 Oracle 和本机 data。原件不会随 Git 迁移。
+- 012后端已提供显式删除接口，前端删除确认将在下一对话接入；未删除的原件不自动过期。请同时备份 Oracle 和本机 data。原件不会随 Git 迁移。
 
 ## 验证与公开仓库
 
@@ -47,7 +48,8 @@ npm run dev
 npm run check             # 保密 / 格式 / lint / 类型 / 组件 / 单元测试
 npm run build             # shared → api/dist → web/dist
 npm run validate:bank     # 只读校验种子资产
-npm run test:integration  # 需先启动 API；合成数据验证后清理本次创建的记录
+npm run test:integration  # 需先启动 API；011基础流程验证
+npm run test:ia           # 本机Oracle/Nest/HTTP+模拟DeepSeek，独立临时端口与合成账号，测试后清理
 ```
 
 OCR 单元测试使用模拟上游响应，不会发送真实简历。本轮按用户选择暂不进行真实百度联调，凭证配置状态不代表识别已验收。登录会话使用 HttpOnly Cookie，令牌只存数据库 SHA-256，密码存 scrypt 哈希，简历和练习按账号查找。应用仅绑定回环；网络攻击防御和公网发布留至 3.0。
@@ -61,4 +63,7 @@ OCR 单元测试使用模拟上游响应，不会发送真实简历。本轮按�
 - [docs/技术约束.md](docs/技术约束.md)：架构、接口、数据库、编码和保密规范。
 - [docs/开发流程.md](docs/开发流程.md)：变更与验收流程。
 - [docs/进度.md](docs/进度.md)：当前完成项、验证证据与后续事项。
-- [product/prototype/README.md](product/prototype/README.md)：历史原型索引；本轮工作台以 CR-1.0-011 为准。
+- [product/prototype/README.md](product/prototype/README.md)：历史原型索引；新IA v2依据 CR-1.0-012，前端下一对话接入。
+
+
+本轮后端交接入口： [技术约束 §15](docs/技术约束.md)。后续按“后端对话完成契约与测试→前端对话接入与浏览器验收”执行，不在前端硬编码原型示例。006迁移已在当前电脑执行，禁止重复执行。DeepSeek真实密钥只填apps/api/.env，模板不包含真值；未配置时API明确返回503，不生成模拟结果。

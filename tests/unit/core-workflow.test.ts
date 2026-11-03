@@ -1,3 +1,4 @@
+import { createPracticeInput, quotaInput } from "@face/shared";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { PDFDocument } from "pdf-lib";
 import { allocateQuestions } from "../../apps/api/src/modules/practice/allocation";
@@ -18,6 +19,9 @@ import { DocumentExtractor } from "../../apps/api/src/providers/document-extract
 afterEach(() => vi.unstubAllGlobals());
 describe("question quotas", () => {
   it("uses relative weights with a stable total", () => {
+    expect(quotaInput.parse({ weights: { js: 1 } }).mode).toBe(
+      createPracticeInput.parse({ weights: { js: 1 } }).mode,
+    );
     expect(
       allocateQuestions(5, [
         { id: "a", weight: 3, available: 20 },
@@ -120,13 +124,31 @@ describe("Baidu contract (mock transport only)", () => {
     ).rejects.toThrow("超过");
     expect(fetcher).not.toHaveBeenCalled();
   });
+  it("uses image form encoding for PNG/JPEG OCR", async () => {
+    const fetcher = vi
+      .fn()
+      .mockResolvedValueOnce(
+        new Response(
+          JSON.stringify({ access_token: "mock-token", expires_in: 3600 }),
+        ),
+      )
+      .mockResolvedValueOnce(
+        new Response(JSON.stringify({ words_result: [{ words: "图片文字" }] })),
+      );
+    vi.stubGlobal("fetch", fetcher);
+    expect(
+      await new BaiduOcr().readImage(Buffer.from("synthetic-image")),
+    ).toEqual([{ page: 1, text: "图片文字" }]);
+    expect(String(fetcher.mock.calls[1]?.[1]?.body)).toContain("image=");
+    expect(String(fetcher.mock.calls[1]?.[1]?.body)).not.toContain("pdf_file=");
+  });
   it("extracts UTF-8 exactly and rejects unsupported file types", async () => {
     const extractor = new DocumentExtractor(new BaiduOcr());
     const raw = "姓名：测试用户\n 技能：TypeScript \n";
     expect((await extractor.extract("txt", Buffer.from(raw))).rawText).toBe(
       raw,
     );
-    expect(() => extractor.validate("photo.png", Buffer.from("test"))).toThrow(
+    expect(() => extractor.validate("photo.bmp", Buffer.from("test"))).toThrow(
       "仅支持",
     );
     expect(() => extractor.validate("fake.pdf", Buffer.from("text"))).toThrow(

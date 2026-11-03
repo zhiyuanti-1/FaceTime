@@ -9,10 +9,12 @@ export class DocumentExtractor {
   constructor(@Inject(BaiduOcr) private readonly ocr: BaiduOcr) {}
   validate(filename: string, buffer: Buffer) {
     const extension = extname(filename).toLowerCase().slice(1);
-    if (!["pdf", "docx", "doc", "txt"].includes(extension))
+    if (
+      !["pdf", "docx", "doc", "txt", "png", "jpg", "jpeg"].includes(extension)
+    )
       throw new ApiError(
         "E_FILE_TYPE",
-        "仅支持PDF、Word（DOC/DOCX）或UTF-8 TXT文字文件",
+        "仅支持PDF、Word、UTF-8 TXT或PNG/JPEG图片",
       );
     if (
       (extension === "pdf" &&
@@ -25,11 +27,23 @@ export class DocumentExtractor {
         "E_FILE_FORMAT",
         "文件内容与扩展名不符，请使用原始文档",
       );
-    return extension;
+    if (
+      (extension === "png" &&
+        !buffer
+          .subarray(0, 8)
+          .equals(Buffer.from([137, 80, 78, 71, 13, 10, 26, 10]))) ||
+      (["jpg", "jpeg"].includes(extension) &&
+        !buffer.subarray(0, 3).equals(Buffer.from([255, 216, 255])))
+    )
+      throw new ApiError("E_FILE_FORMAT", "图片格式不符，请使用原始PNG/JPEG");
+    return ["png", "jpg", "jpeg"].includes(extension) ? "image" : extension;
   }
   async extract(extension: string, buffer: Buffer) {
-    if (extension === "pdf") {
-      const pages = await this.ocr.readPdf(buffer);
+    if (extension === "pdf" || extension === "image") {
+      const pages =
+        extension === "pdf"
+          ? await this.ocr.readPdf(buffer)
+          : await this.ocr.readImage(buffer);
       const rawText = pages.map((p) => p.text).join("\n\n");
       if (!rawText.trim())
         throw new ApiError(

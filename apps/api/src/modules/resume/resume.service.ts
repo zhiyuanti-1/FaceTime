@@ -1,3 +1,4 @@
+import { Readable } from "node:stream";
 import { Inject, Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
 import { mkdir, readFile, writeFile, unlink } from "node:fs/promises";
@@ -38,12 +39,29 @@ export class ResumeService {
         filename.slice(0, 255),
         source,
         relative,
+        file.size,
       );
     } catch (error) {
       await unlink(path);
       throw error;
     }
     return this.recognize(owner, id, file.buffer);
+  }
+  async paste(owner: string, text: string, filename: string) {
+    const buffer = Buffer.from(text, "utf8");
+    const resume = await this.upload(owner, {
+      originalname: filename.endsWith(".txt") ? filename : filename + ".txt",
+      buffer,
+      size: buffer.length,
+      mimetype: "text/plain",
+      fieldname: "file",
+      encoding: "7bit",
+      stream: Readable.from(buffer),
+      destination: "",
+      filename: "",
+      path: "",
+    });
+    return this.repo.confirm(owner, resume.id, text);
   }
   async recognize(owner: string, id: string, provided?: Buffer) {
     const value = await this.repo.get(owner, id);

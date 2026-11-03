@@ -3,11 +3,11 @@
     "target": "ES2022",
     "module": "NodeNext",
     "moduleResolution": "NodeNext",
-    "rootDir": "contracts",
+    "rootDir": ".",
     "outDir": "dist",
     "strict": true,
     "declaration": true,
     "skipLibCheck": true
   },
-  "include": ["contracts/**/*.ts"]
+  "include": ["contracts/**/*.ts", "scoring/**/*.ts"]
 }
