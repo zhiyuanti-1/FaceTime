@@ -20,7 +20,8 @@
     "check": "npm run build:shared && npm run check:public && npm run format:check && npm run lint && tsc --noEmit && npm run check --workspace @face/api && npm run check:components && npm run test",
     "build:shared": "npm run build --workspace @face/shared",
     "test:integration": "npm run build:shared && npm run build --workspace @face/api && node scripts/verify-core.mjs",
-    "test:ia": "npm run build:shared && npm run build --workspace @face/api && node scripts/verify-ia.mjs"
+    "test:ia": "npm run build:shared && npm run build --workspace @face/api && node scripts/verify-ia.mjs",
+    "db:check": "node scripts/check-database.mjs"
   },
   "devDependencies": {
     "@types/node": "22.19.1",
