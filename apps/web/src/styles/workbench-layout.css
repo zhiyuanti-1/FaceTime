@@ -1,0 +1,223 @@
+.workbench-header {
+  min-height: 86px;
+  background: #fff;
+  border-bottom: 1px solid #e2e7ef;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4vw;
+  gap: 28px;
+}
+.wordmark {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: Georgia, serif;
+  font-size: 25px;
+  color: #1d3150;
+}
+.wordmark b {
+  display: grid;
+  place-items: center;
+  border: 1px solid #315ecc;
+  background: #315ecc;
+  color: #fff;
+  width: 35px;
+  height: 38px;
+  font-size: 29px;
+}
+.wordmark > span {
+  font-family: "Microsoft YaHei", sans-serif;
+  font-size: 11px;
+  letter-spacing: 1px;
+  color: #758195;
+  padding-left: 12px;
+  border-left: 1px solid #dfe4ed;
+}
+.workbench-header nav {
+  display: flex;
+  align-self: stretch;
+  gap: 32px;
+  align-items: stretch;
+}
+.workbench-header nav a {
+  display: flex;
+  align-items: center;
+  position: relative;
+  font-size: 13px;
+  color: #748095;
+  min-height: 44px;
+}
+.workbench-header nav a.active {
+  color: #315ecc;
+  font-weight: 700;
+}
+.workbench-header nav a.active:after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  height: 3px;
+  background: #315ecc;
+  left: 0;
+  right: 0;
+}
+.account {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 12px;
+}
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  background: #eaf0fc;
+  color: #315ecc;
+  border-radius: 50%;
+  font-family: Georgia, serif;
+}
+.account button {
+  border: 0;
+  background: transparent;
+  color: #748095;
+  min-height: 44px;
+}
+.workbench-main {
+  max-width: 1440px;
+  margin: auto;
+  padding: 40px 4vw 60px;
+  min-height: calc(100vh - 150px);
+}
+.page-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 32px;
+}
+.title-content {
+  display: flex;
+  gap: 22px;
+  align-items: flex-start;
+}
+.title-content .section-number {
+  padding-top: 2px;
+}
+.page-title h1 {
+  margin-bottom: 8px;
+}
+.page-title p {
+  font-size: 13px;
+  margin: 0;
+}
+.workspace-note {
+  font-family: Georgia, "Microsoft YaHei", serif;
+  color: #8490a3;
+  font-size: 12px;
+}
+.workbench-footer {
+  border-top: 1px solid #e1e6ef;
+  padding: 20px 4vw;
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #8490a3;
+}
+@media (max-width: 1000px) {
+  .wordmark > span {
+    display: none;
+  }
+  .workbench-header nav {
+    gap: 22px;
+  }
+  .workspace-note {
+    display: none;
+  }
+  .workbench-header {
+    gap: 16px;
+  }
+  .login-intro {
+    padding: 40px;
+  }
+  .workbench-main {
+    padding: 30px 24px 45px;
+  }
+}
+@media (max-width: 700px) {
+  h1 {
+    font-size: 24px;
+  }
+  .workbench-header {
+    flex-wrap: wrap;
+    padding: 16px 20px 0;
+    gap: 0;
+    min-height: 112px;
+  }
+  .workbench-header .wordmark {
+    font-size: 22px;
+  }
+  .workbench-header nav {
+    order: 3;
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+    margin-top: 12px;
+  }
+  .workbench-header nav a {
+    font-size: 12px;
+    padding: 8px 0;
+  }
+  .account {
+    margin-left: auto;
+  }
+  .workbench-main {
+    padding: 28px 18px 40px;
+  }
+  .page-title {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 14px;
+  }
+  .title-content {
+    gap: 14px;
+  }
+  .title-content .section-number {
+    font-size: 22px;
+  }
+  .workbench-footer {
+    flex-direction: column;
+    gap: 5px;
+    padding: 20px;
+  }
+  .paper-panel {
+    padding: 20px;
+  }
+  .login-page {
+    display: block;
+  }
+  .login-intro {
+    min-height: 0;
+    padding: 25px;
+  }
+  .login-intro > div {
+    padding-top: 35px;
+  }
+  .login-intro h1 {
+    font-size: 30px;
+  }
+  .login-intro small,
+  .login-intro:after {
+    display: none;
+  }
+  .login-sequence {
+    margin: 20px 0 0;
+    font-size: 10px;
+  }
+  .login-form-area {
+    padding: 40px 25px;
+  }
+  .login-form-area h2 {
+    font-size: 23px;
+  }
+}

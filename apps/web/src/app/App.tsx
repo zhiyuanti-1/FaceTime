@@ -1,87 +1,80 @@
-import { NavLink, Route, Routes, useLocation } from "react-router-dom";
-import { Badge } from "../components/PreviewUi";
-import { HomePage } from "../pages/HomePage";
-import { SetupPage } from "../pages/SetupPage";
-import { ResumePage } from "../pages/ResumePage";
-import { InterviewPage } from "../pages/InterviewPage";
-import { ReportPage } from "../pages/ReportPage";
-import { HistoryPage } from "../pages/HistoryPage";
-import { SettingsPage } from "../pages/SettingsPage";
-import { DegradedPage } from "../pages/DegradedPage";
-
-const previews = [
-  ["/", "首页"],
-  ["/setup", "岗位权重"],
-  ["/resume", "简历"],
-  ["/interview", "面试"],
-  ["/report/demo", "报告"],
-  ["/history", "历史"],
-  ["/settings", "系统设置"],
-  ["/states", "降级态"],
-] as const;
-export function App() {
-  const { pathname } = useLocation();
+import { NavLink, Navigate, Route, Routes } from "react-router-dom";
+import { AuthProvider, useAuth } from "./auth-context";
+import { LoginPage } from "../pages/LoginPage";
+import { ResumeWorkspace } from "../features/resume/ResumeWorkspace";
+import { PracticeSetup } from "../features/paper/PracticeSetup";
+import { AnswerWorkspace } from "../features/session/AnswerWorkspace";
+import { PracticeHistoryPage } from "../pages/PracticeHistoryPage";
+import { ConnectionSettings } from "../pages/ConnectionSettings";
+import { useState } from "react";
+import { Feedback } from "../components/WorkbenchUi";
+function Frame() {
+  const { user, checking, logout } = useAuth();
+  const [error, setError] = useState("");
+  if (checking)
+    return (
+      <div className="connection-loading">
+        <span className="wordmark">
+          <b>F</b> Face
+        </span>
+        <p>正在连接你的练习空间…</p>
+      </div>
+    );
+  if (!user) return <LoginPage />;
   return (
-    <div className="app-shell">
-      <a className="skip-link" href="#main">
-        跳到页面内容
+    <div className="workbench">
+      <a className="skip-link" href="#content">
+        跳到主要内容
       </a>
-      <header className="site-header">
-        <NavLink className="brand" to="/" aria-label="Face 首页">
-          <span className="brand-mark">F</span>
-          <strong>Face</strong>
-          <span className="brand-caption">AI 模拟面试练习</span>
+      <header className="workbench-header">
+        <NavLink to="/" className="wordmark">
+          <b>F</b> Face<span>面试练习室</span>
         </NavLink>
-        <nav aria-label="主导航">
+        <nav aria-label="主要导航">
           <NavLink to="/" end>
-            首页
+            简历空间
           </NavLink>
-          <NavLink to="/history">历史</NavLink>
+          <NavLink to="/practice">定向练习</NavLink>
+          <NavLink to="/history">练习记录</NavLink>
           <NavLink to="/settings">设置</NavLink>
         </nav>
-        <Badge tone="amber">seed · 200 题</Badge>
+        <div className="account">
+          <span className="avatar">
+            {user.username.slice(0, 1).toUpperCase()}
+          </span>
+          <span>{user.username}</span>
+          <button
+            onClick={() => {
+              logout().catch(() => setError("退出失败，请重试"));
+            }}
+          >
+            退出
+          </button>
+        </div>
       </header>
-      <div className="preview-banner">
-        <span>
-          <i />
-          静态界面预览
-        </span>
-        <span>所有数值均为示例 · 业务功能暂未实现</span>
-      </div>
-      <main id="main" key={pathname}>
+      <main id="content" className="workbench-main">
+        <Feedback message={error} />
         <Routes>
-          <Route path="/" element={<HomePage />} />
-          <Route path="/setup" element={<SetupPage />} />
-          <Route path="/resume" element={<ResumePage />} />
-          <Route path="/interview" element={<InterviewPage />} />
-          <Route path="/report/:id" element={<ReportPage />} />
-          <Route path="/report" element={<ReportPage />} />
-          <Route path="/history" element={<HistoryPage />} />
-          <Route path="/settings" element={<SettingsPage />} />
-          <Route path="/states" element={<DegradedPage />} />
-          <Route
-            path="*"
-            element={
-              <section className="card not-found">
-                <h1>页面不存在</h1>
-                <p>请通过底部导航查看静态页面。</p>
-                <NavLink to="/">返回首页</NavLink>
-              </section>
-            }
-          />
+          <Route path="/" element={<ResumeWorkspace />} />
+          <Route path="/resume" element={<Navigate to="/" replace />} />
+          <Route path="/practice" element={<PracticeSetup />} />
+          <Route path="/practice/:id" element={<AnswerWorkspace />} />
+          <Route path="/history" element={<PracticeHistoryPage />} />
+          <Route path="/settings" element={<ConnectionSettings />} />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
-      <footer className="preview-footer">
-        <span>页面预览</span>
-        <nav aria-label="静态页面预览">
-          {previews.map(([path, label]) => (
-            <NavLink key={path} to={path} end={path === "/"}>
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-        <span className="footer-version">Face 1.0 · 仅静态展示</span>
+      <footer className="workbench-footer">
+        <span>Face · 让每一次表达都有积累</span>
+        <span>本轮只练习与记录，暂不评分</span>
       </footer>
     </div>
+  );
+}
+export function App() {
+  return (
+    <AuthProvider>
+      <Frame />
+    </AuthProvider>
   );
 }
