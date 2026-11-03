@@ -1,0 +1,28 @@
+{
+  "topicId": "java",
+  "name": "Java",
+  "stage": "seed",
+  "version": 1,
+  "questions": [
+    { "id": "q_java_0001", "difficulty": 1, "mode": "oral", "text": "String、StringBuilder、StringBuffer 有什么区别？分别适合什么场景？", "expectedPoints": ["String 不可变，每次拼接产生新对象", "StringBuilder 可变、非线程安全、性能最好", "StringBuffer 方法加 synchronized，线程安全但更慢"], "tags": ["字符串", "不可变"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0002", "difficulty": 1, "mode": "oral", "text": "== 和 equals 的区别是什么？重写 equals 为什么通常要一起重写 hashCode？", "expectedPoints": ["== 比较引用地址（基本类型比较值）", "equals 默认也是引用比较，需重写才有值语义", "hashCode 要满足 equals 相等则 hash 相等，否则 HashMap 会取不到"], "tags": ["对象", "hashCode"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0003", "difficulty": 1, "mode": "oral", "text": "方法重载和重写的区别是什么？", "expectedPoints": ["重载发生在同类，方法名相同、参数列表不同", "重写发生在父子类，签名相同、行为替换", "重写有访问权限不能收窄、异常不能扩大的限制"], "tags": ["多态", "基础"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0004", "difficulty": 1, "mode": "oral", "text": "接口和抽象类怎么选？", "expectedPoints": ["接口偏向能力约定，支持多实现", "抽象类偏向复用，可含状态与部分实现", "Java 8 后接口可有 default 方法但无实例字段"], "tags": ["面向对象", "设计"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0005", "difficulty": 1, "mode": "oral", "text": "ArrayList 和 LinkedList 的区别？实际项目里怎么选？", "expectedPoints": ["ArrayList 基于数组，随机访问 O(1)，中间插入 O(n)", "LinkedList 基于双向链表，插入删除 O(1) 但需先定位", "实际绝大多数场景选 ArrayList，链表缓存不友好"], "tags": ["集合", "复杂度"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0006", "difficulty": 2, "mode": "oral", "text": "HashMap 的底层结构是什么？扩容和树化分别在什么条件下发生？", "expectedPoints": ["数组 + 链表 + 红黑树", "负载因子 0.75，容量翻倍扩容", "链表长度达 8 且容量达 64 转红黑树，退化阈值 6"], "tags": ["集合", "HashMap"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0007", "difficulty": 2, "mode": "oral", "text": "ConcurrentHashMap 1.8 是怎么保证线程安全的？", "expectedPoints": ["CAS 插入空桶，synchronized 锁桶头节点", "分段思想弱化为按桶加锁，并发度更高", "size 用 baseCount + CounterCell 分散计数"], "tags": ["并发", "集合"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0008", "difficulty": 2, "mode": "oral", "text": "volatile 能保证什么、不能保证什么？", "expectedPoints": ["保证可见性与禁止指令重排", "不保证原子性，i++ 仍然不安全", "典型用途是状态标志位与双重检查锁"], "tags": ["并发", "内存模型"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0009", "difficulty": 2, "mode": "oral", "text": "synchronized 和 ReentrantLock 有什么区别？什么场景下必须用后者？", "expectedPoints": ["synchronized 是关键字、自动释放、非公平", "ReentrantLock 支持可中断、超时、公平锁、多条件队列", "需要 tryLock 或 Condition 精确唤醒时用 ReentrantLock"], "tags": ["并发", "锁"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0010", "difficulty": 2, "mode": "oral", "text": "线程池的核心参数有哪些？任务提交后经历了怎样的流转？", "expectedPoints": ["核心线程数、最大线程数、队列、存活时间、拒绝策略", "先核心线程，再入队，队列满再扩容到最大线程", "超过最大线程触发拒绝策略"], "tags": ["并发", "线程池"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0011", "difficulty": 2, "mode": "oral", "text": "JVM 运行时内存区域怎么划分？哪些是线程私有的？", "expectedPoints": ["堆、方法区（元空间）为线程共享", "虚拟机栈、本地方法栈、程序计数器为线程私有", "字符串常量池在堆中（1.7 后）"], "tags": ["JVM", "内存"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0012", "difficulty": 2, "mode": "oral", "text": "常见垃圾回收算法有哪些？G1 相比 CMS 的主要改进是什么？", "expectedPoints": ["标记清除、复制、标记整理、分代收集", "G1 按 Region 划分，可预测停顿时间", "G1 用 SATB + 记忆集，避免全堆扫描与碎片"], "tags": ["JVM", "GC"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0013", "difficulty": 2, "mode": "oral", "text": "类加载的过程分为哪几步？双亲委派的作用是什么？", "expectedPoints": ["加载、验证、准备、解析、初始化", "先委派父加载器，避免核心类被篡改", "打破场景：SPI、OSGi、热部署"], "tags": ["JVM", "类加载"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0014", "difficulty": 2, "mode": "oral", "text": "final 修饰变量、方法、类分别是什么含义？", "expectedPoints": ["变量：引用不可变，对象内容仍可改", "方法：不可被子类重写", "类：不可被继承；final 有助于 JIT 优化"], "tags": ["关键字", "基础"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0015", "difficulty": 3, "mode": "oral", "text": "happens-before 规则解决什么问题？能举出至少三条具体规则吗？", "expectedPoints": ["定义跨线程可见性的偏序关系，弥补重排序的不确定性", "程序次序、监视器解锁先于加锁、volatile 写先于读", "线程启动/终止规则、传递性"], "tags": ["并发", "内存模型"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0016", "difficulty": 2, "mode": "oral", "text": "Spring Bean 的生命周期包含哪些关键扩展点？", "expectedPoints": ["实例化、属性填充、Aware 回调、初始化前后", "BeanPostProcessor 与 InitializingBean、@PostConstruct", "销毁回调与作用域关系"], "tags": ["Spring", "框架"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0017", "difficulty": 2, "mode": "oral", "text": "什么是泛型擦除？它带来了哪些限制？", "expectedPoints": ["编译后类型参数被擦为 Object 或上界", "不能 new T()、不能对泛型数组直接创建", "运行时无法获取真实类型参数，桥接方法保证多态"], "tags": ["泛型", "基础"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0018", "difficulty": 3, "mode": "oral", "text": "线上出现内存泄漏，你会怎么定位？排查步骤说清楚。", "expectedPoints": ["先看监控与 GC 日志，判断是老年代持续增长", "jmap 导出堆快照，用 MAT 看支配树与 GC Roots 引用链", "区分是真泄漏（静态集合、ThreadLocal、监听器）还是参数不合理"], "tags": ["JVM", "排查"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_java_0019", "difficulty": 1, "mode": "oral", "text": "int 和 Integer 有什么区别？自动装箱有哪些坑？", "expectedPoints": ["Integer 是包装类，可为 null，进集合需要装箱", "缓存 -128~127，超出范围 == 比较为 false", "拆箱时 null 会抛 NPE"], "tags": ["基础", "装箱"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_java_0020", "difficulty": 2, "mode": "oral", "text": "服务器 CPU 使用率飙到 100%，你的排查思路是什么？", "expectedPoints": ["top 找进程，top -Hp 找线程", "线程号转十六进制，jstack 定位栈帧", "区分死循环、频繁 GC、锁竞争三类原因"], "tags": ["排查", "运维"], "timeLimitSec": 180, "verified": false }
+  ]
+}

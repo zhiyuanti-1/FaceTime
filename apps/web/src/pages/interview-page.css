@@ -1,0 +1,122 @@
+.interview-progress {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+  padding: 9px 18px;
+  margin-bottom: 20px;
+}
+.interview-progress .button {
+  font-size: 11px;
+  padding: 0;
+  border: 0;
+  color: #8a97ac;
+  font-weight: 400;
+}
+.progress-track {
+  height: 6px;
+  background: #eef1f6;
+  border-radius: 6px;
+  flex: 1;
+  overflow: hidden;
+}
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: 6px;
+  background: var(--blue);
+}
+.interview-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 2.5fr) minmax(280px, 1fr);
+  gap: 20px;
+}
+.question-card h1 {
+  font-size: 29px;
+  margin: 2px 0 12px;
+}
+.question-card .label {
+  margin-bottom: 3px;
+}
+.record-status {
+  display: flex;
+  align-items: center;
+  gap: 45px;
+}
+.record-status strong {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+.record-status i {
+  width: 15px;
+  height: 15px;
+  background: #e4444b;
+  border-radius: 50%;
+}
+.waveform {
+  height: 104px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+}
+.waveform span {
+  width: 8px;
+  border-radius: 9px;
+  background: #ced6e2;
+}
+.waveform span.blue {
+  background: #3169e9;
+}
+.transcript-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 22px;
+  margin-bottom: 14px;
+}
+.transcript-header .label {
+  margin: 0;
+}
+textarea {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  min-height: 104px;
+  resize: vertical;
+  background: #fbfcfe;
+  color: #53627a;
+  line-height: 1.7;
+  margin-bottom: 14px;
+}
+.question-info {
+  display: flex;
+  flex-direction: column;
+}
+.question-info p {
+  font-size: 12px;
+  color: #617088;
+}
+.question-info .notice {
+  margin-top: 18px;
+}
+.question-info .notice p {
+  color: #a45a00;
+}
+dl {
+  margin: 0;
+}
+.info-list > div {
+  display: grid;
+  grid-template-columns: 65px 1fr;
+  gap: 15px;
+  margin: 9px 0;
+  font-size: 12px;
+}
+.info-list dt {
+  color: #7d8ca2;
+}
+.info-list dd {
+  margin: 0;
+}

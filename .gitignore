@@ -1,0 +1,50 @@
+# Dependencies / generated artifacts
+node_modules/
+dist/
+coverage/
+.vite/
+.cache/
+__pycache__/
+*.pyc
+playwright-report/
+test-results/
+
+# Real configuration is never public. Templates contain empty values only.
+.env
+.env.*
+!.env.example
+*.local
+.npmrc
+
+# Runtime/private data (not packages/content seed assets)
+/apps/api/data/
+/apps/api/uploads/
+/apps/api/storage/
+/data/
+/uploads/
+/storage/
+*.log
+*.dmp
+*.dump
+*.db
+*.sqlite
+*.sqlite3
+*.wav
+*.mp3
+*.m4a
+*.webm
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+*.sso
+ewallet*
+wallet/
+
+# Local editor / OS files
+.vscode/
+.idea/
+*.code-workspace
+.DS_Store
+Thumbs.db

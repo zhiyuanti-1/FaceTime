@@ -1,0 +1,148 @@
+.report-summary {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  padding: 23px;
+}
+.score-title {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+.score-title h1 {
+  font-size: 58px;
+  line-height: 1.15;
+  font-weight: 750;
+  letter-spacing: -2px;
+}
+.score-title > div p {
+  margin-top: 4px;
+}
+.report-summary .eyebrow {
+  margin-bottom: 5px;
+}
+.report-summary > div > p {
+  margin-top: 7px;
+}
+.report-export {
+  text-align: right;
+}
+.report-export > .badge {
+  margin-top: 12px;
+}
+.report-export .button {
+  min-width: 95px;
+  padding: 8px 20px;
+}
+.dimension-list {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+.dimension-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 0.9fr) minmax(80px, 1fr) 40px 42px;
+  gap: 13px;
+  align-items: center;
+  font-size: 12px;
+}
+.dimension-row > div > strong {
+  font-weight: 400;
+}
+.dimension-row small {
+  display: block;
+  color: #7d8ba2;
+  font-size: 10px;
+}
+.dimension-track {
+  height: 10px;
+  background: #f0f2f7;
+  border-radius: 8px;
+  overflow: hidden;
+}
+.dimension-track span {
+  display: block;
+  height: 100%;
+  background: var(--blue);
+  border-radius: 8px;
+}
+.dimension-row > strong {
+  font-size: 14px;
+}
+.dimension-row > strong.muted {
+  font-size: 11px;
+  font-weight: 400;
+  white-space: nowrap;
+}
+.deduction-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.deduction {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px 12px;
+  background: #fbfcfe;
+}
+.deduction-title {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  font-size: 12px;
+}
+.deduction-title b {
+  margin-left: auto;
+  color: #ce3038;
+  white-space: nowrap;
+}
+.deduction > p {
+  margin: 4px 0;
+  font-size: 10px;
+}
+.deduction-quote {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+  color: #58677f;
+}
+.deduction-quote .button {
+  border: 0;
+  background: transparent;
+  color: var(--blue);
+  font-size: 10px;
+  padding: 0;
+  font-weight: 400;
+}
+.turn-grid {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(0, 1fr));
+  gap: 8px;
+}
+.turn-card {
+  background: #fbfcfe;
+  border: 1px solid var(--border);
+  padding: 9px;
+  border-radius: 7px;
+}
+.turn-card > .muted {
+  font-size: 10px;
+}
+.turn-card > div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.turn-card strong {
+  font-size: 24px;
+}
+.turn-card .amber-text {
+  font-size: 10px;
+}
+.report-page > .grid:last-child .card > p {
+  font-size: 12px;
+  color: #63728a;
+  margin-top: 10px;
+}

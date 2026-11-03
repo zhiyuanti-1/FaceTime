@@ -1,0 +1,3 @@
+#!/bin/sh
+# Only check publication leaks; no Oracle connection or API calls.
+node scripts/check-public-repo.mjs

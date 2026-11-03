@@ -1,0 +1,155 @@
+@media (max-width: 520px) {
+  .site-header > .badge {
+    display: none;
+  }
+  .site-header {
+    height: 60px;
+  }
+  .site-header nav a {
+    padding: 6px 12px;
+  }
+  .preview-banner {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1px;
+  }
+  .three {
+    grid-template-columns: 1fr;
+  }
+  .stats .card {
+    min-height: 125px;
+  }
+  .stats h2 {
+    margin-bottom: 15px;
+  }
+  .hero-actions > .button {
+    width: 100%;
+  }
+  .hero {
+    padding: 23px;
+  }
+  .hero h1 {
+    font-size: 26px;
+  }
+  .hero-description {
+    font-size: 13px;
+  }
+  .mobile-break {
+    display: block;
+  }
+  .first-visit > p {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .card {
+    padding: 18px;
+  }
+  .steps {
+    gap: 9px;
+    font-size: 10px;
+  }
+  .steps b {
+    display: none;
+  }
+  .steps li {
+    gap: 4px;
+  }
+  .weight-row {
+    grid-template-columns: 130px 1fr 25px;
+    gap: 8px;
+  }
+  .field {
+    grid-template-columns: 78px 1fr;
+    gap: 10px;
+  }
+  .resume-fields input {
+    font-size: 11px;
+    padding: 9px 8px;
+  }
+  .record-status {
+    gap: 10px;
+  }
+  .record-status > .muted {
+    font-size: 10px;
+  }
+  .waveform {
+    gap: 3px;
+    overflow: hidden;
+  }
+  .waveform span {
+    min-width: 4px;
+  }
+  .question-card h1 {
+    font-size: 23px;
+  }
+  .transcript-header {
+    gap: 8px;
+  }
+  .interview-progress .muted {
+    display: none;
+  }
+  .report-summary {
+    flex-direction: column;
+  }
+  .report-export {
+    display: flex;
+    justify-content: space-between;
+    width: 100%;
+    gap: 10px;
+    align-items: center;
+  }
+  .report-export > .badge {
+    margin-top: 0;
+    font-size: 10px;
+  }
+  .dimension-row {
+    grid-template-columns: 110px minmax(40px, 1fr) 40px;
+  }
+  .turn-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 5px;
+  }
+  .turn-card {
+    padding: 6px;
+  }
+  .turn-card strong {
+    font-size: 21px;
+  }
+  .turn-card .amber-text {
+    display: none;
+  }
+  .deduction-title {
+    gap: 8px;
+  }
+  .deduction-title > strong {
+    font-size: 11px;
+  }
+  .deduction-quote {
+    gap: 5px;
+  }
+  .version-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .version-grid p {
+    font-size: 10px;
+  }
+  .version-grid strong {
+    font-size: 12px;
+  }
+  .manual-answer .button {
+    padding: 10px 15px;
+  }
+  .page-heading {
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .page-heading > .badge {
+    font-size: 10px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+}

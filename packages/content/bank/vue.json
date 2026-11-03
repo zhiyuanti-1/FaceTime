@@ -1,0 +1,28 @@
+{
+  "topicId": "vue",
+  "name": "Vue",
+  "stage": "seed",
+  "version": 1,
+  "questions": [
+    { "id": "q_vue_0001", "difficulty": 1, "mode": "oral", "text": "v-if 和 v-show 的区别是什么？分别什么时候用？", "expectedPoints": ["v-if 真实销毁重建，有编译期惰性", "v-show 只切 display，DOM 一直存在", "频繁切换用 v-show，条件稳定用 v-if"], "tags": ["指令", "基础"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_vue_0002", "difficulty": 1, "mode": "oral", "text": "computed 和 watch 的区别？各自适合什么场景？", "expectedPoints": ["computed 有缓存，依赖不变不重算", "watch 无缓存，适合副作用与异步", "需要派生值用 computed，需要响应变化做事用 watch"], "tags": ["响应式", "基础"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_vue_0003", "difficulty": 1, "mode": "oral", "text": "v-model 在原生元素和组件上分别等价于什么？", "expectedPoints": ["原生：value 绑定 + input 事件", "组件：modelValue 属性 + update:modelValue 事件", "支持 .lazy/.number/.trim 修饰符"], "tags": ["指令", "双向绑定"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_vue_0004", "difficulty": 1, "mode": "oral", "text": "父子组件的生命周期执行顺序是怎样的？", "expectedPoints": ["父 beforeCreate/created/beforeMount", "子 beforeCreate…mounted", "父 mounted；更新时父 beforeUpdate 先于子"], "tags": ["生命周期"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_vue_0005", "difficulty": 2, "mode": "oral", "text": "Vue2 的响应式原理是什么？它有哪些固有缺陷？", "expectedPoints": ["Object.defineProperty 劫持已有属性的 getter/setter", "无法监听新增/删除属性，需要 $set/$delete", "无法监听数组下标与 length 变化，重写了七个数组方法"], "tags": ["响应式", "原理"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0006", "difficulty": 2, "mode": "oral", "text": "Vue3 为什么改用 Proxy？它解决了哪些问题？", "expectedPoints": ["Proxy 拦截整个对象，新增/删除属性天然可监听", "惰性代理，深层对象访问时才递归", "代价：不兼容 IE，且需处理原始对象与代理对象的身份问题"], "tags": ["响应式", "Vue3"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0007", "difficulty": 2, "mode": "oral", "text": "ref 和 reactive 有什么区别？分别适用什么场景？", "expectedPoints": ["ref 包装任意类型，通过 .value 访问", "reactive 只能用于对象，直接访问属性", "解构 reactive 会丢失响应性，需要 toRefs"], "tags": ["Vue3", "响应式"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0008", "difficulty": 2, "mode": "oral", "text": "nextTick 的实现原理是什么？为什么改完数据不能立刻拿到 DOM？", "expectedPoints": ["Vue 更新是异步批处理的，同一轮只刷新一次", "nextTick 基于微任务（Promise.then / MutationObserver）", "等待本轮渲染队列执行完再回调"], "tags": ["渲染", "原理"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0009", "difficulty": 2, "mode": "oral", "text": "Vue 组件之间有哪些通信方式？跨层级传递你一般怎么做？", "expectedPoints": ["props/emit、v-model、插槽", "provide/inject 用于跨层级", "全局状态用 Pinia；事件总线已不推荐"], "tags": ["组件", "通信"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0010", "difficulty": 2, "mode": "oral", "text": "keep-alive 的原理是什么？activated 和 mounted 的触发时机有何不同？", "expectedPoints": ["缓存组件 vnode 与实例，切走时不移除只失活", "首次进入走 mounted + activated，之后只走 activated", "配合 include/exclude 与 max 控制缓存"], "tags": ["组件", "缓存"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0011", "difficulty": 2, "mode": "oral", "text": "虚拟 DOM 的 diff 策略是什么？Vue3 相比 Vue2 做了什么优化？", "expectedPoints": ["同层比较，key 辅助复用", "Vue2 双端比较，Vue3 用最长递增子序列减少移动", "Vue3 结合 patchFlag 只比对动态部分"], "tags": ["虚拟DOM", "diff"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0012", "difficulty": 3, "mode": "oral", "text": "Vue3 的编译优化有哪些？静态提升和 Block Tree 各自解决什么问题？", "expectedPoints": ["静态提升：静态节点提到 render 外只创建一次", "patchFlag 标记动态属性类型，跳过静态 diff", "Block Tree 把动态节点收集为扁平数组，减少遍历"], "tags": ["编译", "Vue3"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0013", "difficulty": 2, "mode": "oral", "text": "Vue Router 的导航守卫执行顺序是怎样的？", "expectedPoints": ["失活组件 beforeRouteLeave", "全局 beforeEach、beforeResolve", "路由独享与组件内守卫，最后 afterEach"], "tags": ["路由"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0014", "difficulty": 2, "mode": "oral", "text": "Pinia 和 Vuex 有什么区别？为什么新项目更推荐 Pinia？", "expectedPoints": ["Pinia 去掉了 mutation，action 同步异步都能做", "天然支持 TS 类型推导与按模块拆分", "支持 setup 语法，devtools 体验更好"], "tags": ["状态管理"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0015", "difficulty": 3, "mode": "oral", "text": "自定义指令的钩子函数有哪些？能举一个用它解决实际问题的例子吗？", "expectedPoints": ["created/beforeMount/mounted/beforeUpdate/updated/unmounted", "常见用途：权限控制、点击外部关闭、图片懒加载", "指令内可直接操作 DOM，但要处理卸载清理"], "tags": ["指令", "进阶"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0016", "difficulty": 2, "mode": "oral", "text": "为什么组件的 data 必须是一个函数而不是对象？", "expectedPoints": ["对象会被所有实例共享引用", "函数每次返回新对象，保证实例间数据隔离", "根实例可以是对象，因为只有一个"], "tags": ["组件", "基础"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_vue_0017", "difficulty": 2, "mode": "oral", "text": "列表渲染时 key 的作用是什么？用 index 当 key 会有什么问题？", "expectedPoints": ["key 用于 diff 时识别节点身份，决定复用还是重建", "index 在插入/删除时会错位，导致状态串位", "稳定唯一 id 才安全"], "tags": ["虚拟DOM", "key"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0018", "difficulty": 3, "mode": "oral", "text": "Vue2 里给对象新增属性为什么页面不更新？底层发生了什么？", "expectedPoints": ["新增属性没有经过 defineProperty 劫持", "dep 未收集依赖，setter 不存在所以不触发更新", "$set 内部手动 defineReactive 并 notify"], "tags": ["响应式", "原理"], "timeLimitSec": 180, "verified": false },
+    { "id": "q_vue_0019", "difficulty": 1, "mode": "oral", "text": "Vue 项目常见的性能优化手段有哪些？", "expectedPoints": ["路由与组件懒加载、代码分割", "v-if 替代频繁 v-show、长列表虚拟滚动", "避免大对象响应式、合理使用 computed 缓存"], "tags": ["性能"], "timeLimitSec": 120, "verified": false },
+    { "id": "q_vue_0020", "difficulty": 2, "mode": "oral", "text": "SSR 的水合（hydration）是什么？水合不匹配会有什么表现？", "expectedPoints": ["服务端渲染出 HTML 后，客户端复用 DOM 并绑定事件", "首屏无白屏、SEO 友好，但需两端代码同构", "不匹配会导致 DOM 被重建、出现闪烁或事件错乱"], "tags": ["SSR", "进阶"], "timeLimitSec": 180, "verified": false }
+  ]
+}
