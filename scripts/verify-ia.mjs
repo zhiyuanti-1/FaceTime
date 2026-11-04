@@ -7,14 +7,23 @@ import { NestFactory } from "@nestjs/core";
 import cookieParser from "cookie-parser";
 import { AppModule } from "../apps/api/dist/app.module.js";
 import { OracleStore } from "../apps/api/dist/infrastructure/database.js";
+import { setupApiDocs } from "../apps/api/dist/infrastructure/api-docs.js";
 import { Errors } from "../apps/api/dist/infrastructure/http.js";
 import { DataService } from "../apps/api/dist/modules/workspace/data.service.js";
 import { hashPassword } from "../apps/api/dist/modules/auth/password.js";
 import { config } from "../apps/api/dist/config.js";
 import { dashboardSchema, reportSchema, dataExportSchema } from "@face/shared";
+const sqlplus = process.env.FACE_SQLPLUS || "sqlplus";
+assert.equal(
+  spawnSync(sqlplus, ["-V"], { stdio: "ignore" }).status,
+  0,
+  "请将 SQL*Plus 加入 PATH，或设置 FACE_SQLPLUS 为本机 sqlplus.exe 的完整路径。",
+);
 const originalFetch = globalThis.fetch;
 const replies = [];
 let aiCalls = 0;
+const realLocalModel = process.env.FACE_TEST_REAL_LOCAL_MODEL === "1";
+let modelName = "合成候选人";
 globalThis.fetch = async (input, init) => {
   if (String(input).startsWith("https://api.deepseek.com/")) {
     aiCalls++;
@@ -37,15 +46,80 @@ globalThis.fetch = async (input, init) => {
       }),
     );
   }
+  if (String(input).startsWith("https://aip.baidubce.com/")) {
+    return Response.json(
+      String(input).includes("/oauth/")
+        ? { access_token: "synthetic", expires_in: 600 }
+        : { words_result: [{ words: "姓名：合成候选人" }] },
+    );
+  }
+  if (String(input).startsWith("http://127.0.0.1:17861/")) {
+    const request = JSON.parse(init.body);
+    assert.equal(request.chat_template_kwargs.enable_thinking, false);
+    if (request.messages[0].content === "调试样例提示词") {
+      assert.equal(request.response_format, undefined);
+      assert.equal(request.messages[1].content, "姓名：合成候选人");
+      return Response.json({
+        choices: [
+          { finish_reason: "length", message: { content: '{"未完成":' } },
+        ],
+      });
+    }
+    if (realLocalModel && modelName === "合成候选人")
+      return originalFetch(input, init);
+    return Response.json({
+      choices: [
+        {
+          finish_reason: "stop",
+          message: {
+            content: JSON.stringify({
+              基本信息: {
+                姓名: modelName,
+                性别: null,
+                出生日期: null,
+                电话: null,
+                邮箱: null,
+                微信号: null,
+                现居: null,
+                户籍: null,
+                政治面貌: null,
+                民族: null,
+              },
+              求职意向: {
+                岗位: null,
+                行业: null,
+                城市: null,
+                薪资: null,
+                到岗时间: null,
+                工作类型: null,
+              },
+              教育经历: [],
+              "实习/工作经历": [],
+              项目经历: [],
+              校园经历: [],
+              技能: [],
+              自我评价: null,
+              语言能力: [],
+              爱好: [],
+              其他: [],
+            }),
+          },
+        },
+      ],
+    });
+  }
   return originalFetch(input, init);
 };
 config.DEEPSEEK_API_KEY = randomUUID();
+config.BAIDU_AK = randomUUID();
+config.BAIDU_SK = randomUUID();
 const app = await NestFactory.create(AppModule, {
   logger: false,
   abortOnError: false,
 });
 app.use(cookieParser());
 app.useGlobalFilters(new Errors());
+setupApiDocs(app);
 await app.listen(0, "127.0.0.1");
 const base = (await app.getUrl()) + "/api/v1";
 const db = app.get(OracleStore);
@@ -58,8 +132,16 @@ let stage = "initialization";
 async function call(path, body, method = "GET") {
   const response = await originalFetch(base + path, {
     method,
-    headers: { Cookie: cookie, "Content-Type": "application/json" },
-    body: body === undefined ? undefined : JSON.stringify(body),
+    headers: {
+      Cookie: cookie,
+      ...(body instanceof FormData
+        ? {}
+        : { "Content-Type": "application/json" }),
+    },
+    body:
+      body instanceof FormData || body === undefined
+        ? body
+        : JSON.stringify(body),
   });
   const next = response.headers.get("set-cookie");
   if (next) cookie = next.split(";")[0];
@@ -134,6 +216,110 @@ try {
   const resumeId = pasted.body.id;
   assert.equal(pasted.body.rawText, resumeText);
   assert.equal(pasted.body.needsReview, false);
+  stage = "OCR import, OpenAPI and concurrent resume quota";
+  const spec = await (
+    await originalFetch((await app.getUrl()) + "/v3/api-docs")
+  ).json();
+  assert(spec.paths["/api/v1/resumes/{id}/structured"].put.requestBody);
+  assert(spec.paths["/api/v1/auth/login"].post.requestBody);
+  const png = new FormData();
+  png.set(
+    "file",
+    new Blob([Buffer.from("89504e470d0a1a0a", "hex")]),
+    "synthetic.png",
+  );
+  const debugRoot = (await app.getUrl()) + "/debug/resume";
+  const debugOcr = await originalFetch(debugRoot + "/ocr", {
+    method: "POST",
+    headers: { Cookie: cookie },
+    body: png,
+  });
+  assert.equal(debugOcr.status, 201);
+  const { rawText } = await debugOcr.json();
+  assert.equal(rawText, "姓名：合成候选人");
+  const debugRun = await originalFetch(debugRoot + "/run", {
+    method: "POST",
+    headers: { Cookie: cookie, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      rawText,
+      prompt: "调试样例提示词",
+      constrain: false,
+    }),
+  });
+  assert.equal(debugRun.status, 201);
+  const diagnostic = await debugRun.json();
+  assert.equal(diagnostic.finishReason, "length");
+  assert.equal(diagnostic.rawOutput, '{"未完成":');
+  assert.equal(diagnostic.validJson, false);
+  assert.equal((await originalFetch(debugRoot + "/prompt")).status, 401);
+  modelName = "不在原文";
+  const ocr = await call("/resumes", png, "POST");
+  assert.equal(ocr.status, 201);
+  assert.equal(ocr.body.rawText, "姓名：合成候选人");
+  assert.equal(ocr.body.draft.error.code, "E_LOCAL_OUTPUT");
+  const structuredPath = `/resumes/${ocr.body.id}/structured`;
+  modelName = "合成候选人";
+  const imported = await call(structuredPath + "/draft", undefined, "POST");
+  assert.equal(imported.status, 201, imported.body.error?.code);
+  assert.equal(imported.body.structured.基本信息.姓名, modelName);
+  assert.equal((await call(structuredPath)).body.structured, null);
+  const edited = {
+    ...imported.body.structured,
+    基本信息: { ...imported.body.structured.基本信息, 姓名: "人工更正" },
+  };
+  assert.equal(
+    (await call(structuredPath, edited, "PUT")).body.structured.基本信息.姓名,
+    "人工更正",
+  );
+  assert.deepEqual((await call(structuredPath)).body.structured, edited);
+  assert.equal(
+    (await call(structuredPath, { name: "invalid" }, "PUT")).status,
+    400,
+  );
+  assert.equal(
+    (await call(structuredPath, undefined, "DELETE")).body.structured,
+    null,
+  );
+  const recognized = await call(
+    `/resumes/${ocr.body.id}/recognize`,
+    undefined,
+    "POST",
+  );
+  assert.equal(recognized.status, 201);
+  assert.deepEqual(recognized.body.draft, {
+    ok: true,
+    structured: imported.body.structured,
+  });
+  assert.equal((await call(structuredPath)).body.structured, null);
+  const concurrent = await Promise.all(
+    [1, 2].map((n) =>
+      call(
+        "/resumes/paste",
+        { text: resumeText, filename: `synthetic-${n}.txt` },
+        "POST",
+      ),
+    ),
+  );
+  assert.deepEqual(concurrent.map((item) => item.status).sort(), [201, 409]);
+  assert.equal(
+    concurrent.find((item) => item.status === 409).body.error.code,
+    "E_RESUME_LIMIT",
+  );
+  for (const item of [
+    ocr,
+    concurrent.find((result) => result.status === 201),
+  ]) {
+    assert.equal(
+      (
+        await call(
+          `/resumes/${item.body.id}`,
+          { confirmation: "DELETE" },
+          "DELETE",
+        )
+      ).status,
+      200,
+    );
+  }
   replies.push(analysis);
   assert.equal(
     (await call(`/resumes/${resumeId}/analyze`, {}, "POST")).status,
@@ -318,7 +504,7 @@ try {
   assert.equal((await call("/dashboard")).body.resumeCount, 0);
   assert.equal(replies.length, 0);
   console.info(
-    "PASS: IA API with real Oracle: preferences, truthful overview, paste/analysis, 5+5 anchored interview, progress, 10 scores, immutable reports/cache/staleness, privacy-safe diagnostics/export, skip, owner-scoped deletion. AI mocked; no real cloud request.",
+    `PASS: IA API with real Oracle: OpenAPI, OCR structured import/CRUD/retry, concurrent quota, preferences, truthful overview, paste/analysis, 5+5 anchored interview, progress, 10 scores, immutable reports/cache/staleness, privacy-safe diagnostics/export, skip, owner-scoped deletion. local inference ${realLocalModel ? "real on successful import" : "mocked"}; no real cloud request.`,
   );
 } catch (error) {
   console.error("IA verification failed at:", stage);
@@ -337,15 +523,11 @@ DELETE FROM face_app.face_users WHERE id='${id}' AND username='${username}';
 COMMIT;
 exit
 `;
-    const result = spawnSync(
-      "D:/Oracle/OracleApp/dbhomeFree/bin/sqlplus.exe",
-      ["-L", "-S", "/ as sysdba"],
-      {
-        input: sql,
-        encoding: "utf8",
-        env: { ...process.env, NLS_LANG: "AMERICAN_AMERICA.AL32UTF8" },
-      },
-    );
+    const result = spawnSync(sqlplus, ["-L", "-S", "/ as sysdba"], {
+      input: sql,
+      encoding: "utf8",
+      env: { ...process.env, NLS_LANG: "AMERICAN_AMERICA.AL32UTF8" },
+    });
     assert.equal(
       result.status,
       0,

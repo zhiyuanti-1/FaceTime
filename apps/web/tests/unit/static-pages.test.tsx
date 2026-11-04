@@ -15,7 +15,7 @@ describe("authenticated workspace boundaries", () => {
     expect(html).toContain("正在连接");
     expect(html).not.toContain("六维得分");
   });
-  it("offers real document upload and no image format", () => {
+  it("offers document and image upload", () => {
     const html = renderToStaticMarkup(
       <ResumeUpload
         busy={false}
@@ -26,7 +26,7 @@ describe("authenticated workspace boundaries", () => {
     );
     expect(html).toContain('type="file"');
     expect(html).toContain(".pdf,.doc,.docx,.txt");
-    expect(html).not.toContain(".png");
+    expect(html).toContain(".png,.jpg,.jpeg");
     expect(html).toContain("4MB");
   });
   it("renders only topics supplied by the API", () => {

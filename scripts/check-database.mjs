@@ -31,6 +31,7 @@ if (missing.length) {
       "001-initial-oracle",
       "005-core-workflow",
       "006-ia-workspace",
+      "007-resume-structure",
     ]) {
       const hash = createHash("sha256")
         .update(readFileSync(`apps/api/migrations/${name}.sql`))

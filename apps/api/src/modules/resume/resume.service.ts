@@ -1,3 +1,5 @@
+import { z } from "zod";
+import { LocalResumeModel } from "../../providers/local-resume-model.js";
 import { Readable } from "node:stream";
 import { Inject, Injectable } from "@nestjs/common";
 import { randomUUID } from "node:crypto";
@@ -7,12 +9,16 @@ import { DocumentExtractor } from "../../providers/document-extractor.js";
 import { ResumeRepository } from "./resume.repository.js";
 import { dataRoot } from "../../config.js";
 import { ApiError } from "../../infrastructure/http.js";
+const inputError = z.object({
+  error: z.object({ code: z.string(), message: z.string() }),
+});
 @Injectable()
 export class ResumeService {
   private readonly running = new Set<string>();
   constructor(
     @Inject(ResumeRepository) private readonly repo: ResumeRepository,
     @Inject(DocumentExtractor) private readonly extractor: DocumentExtractor,
+    @Inject(LocalResumeModel) private readonly model: LocalResumeModel,
   ) {}
   path(relative: string) {
     const path = resolve(dataRoot, relative);
@@ -46,6 +52,31 @@ export class ResumeService {
       throw error;
     }
     return this.recognize(owner, id, file.buffer);
+  }
+  async draftStructure(owner: string, id: string) {
+    const resume = await this.repo.get(owner, id);
+    if (resume.EXTRACTION_STATUS !== "ready" || !resume.RAW_TEXT)
+      throw new ApiError("E_OCR_REQUIRED", "请先完成简历文字识别", 409);
+    return { structured: await this.model.extract(resume.RAW_TEXT) };
+  }
+
+  async withDraft(
+    owner: string,
+    resume: Awaited<ReturnType<ResumeService["recognize"]>>,
+  ) {
+    if (resume.status !== "ready") return { ...resume, draft: null };
+    try {
+      return {
+        ...resume,
+        draft: { ok: true, ...(await this.draftStructure(owner, resume.id)) },
+      };
+    } catch (error) {
+      if (!(error instanceof ApiError)) throw error;
+      return {
+        ...resume,
+        draft: { ok: false, ...inputError.parse(error.getResponse()) },
+      };
+    }
   }
   async paste(owner: string, text: string, filename: string) {
     const buffer = Buffer.from(text, "utf8");

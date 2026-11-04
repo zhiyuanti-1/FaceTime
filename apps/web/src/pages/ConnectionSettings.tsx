@@ -47,7 +47,7 @@ export function ConnectionSettings() {
             </div>
             <div>
               <dt>评分</dt>
-              <dd>未启用</dd>
+              <dd>{settings.scoringEnabled ? "已配置" : "待配置"}</dd>
             </div>
           </dl>
         ) : (

@@ -20,9 +20,11 @@ ALTER SESSION SET CURRENT_SCHEMA=FACE_APP;
 @@002-runtime-grants.sql
 @@005-core-workflow.sql
 @@006-ia-workspace.sql
+@@007-resume-structure.sql
 INSERT INTO face_migrations(version,checksum_sha256) VALUES('001-initial-oracle','13e4f04078f36df83658e76385948e9a84c2af147368ec54be3a62c5bce1b05b');
 INSERT INTO face_migrations(version,checksum_sha256) VALUES('005-core-workflow','c0c8774cb87426b51b8039eb306b487fc4fb0290831aecd9e11dd0cda9789d19');
 INSERT INTO face_migrations(version,checksum_sha256) VALUES('006-ia-workspace','3cd4f041f139b8704ccbeff3394ea8eee0967806a5cd3f36bf642d46bd8168b2');
+INSERT INTO face_migrations(version,checksum_sha256) VALUES('007-resume-structure','95837bc73317db9c60d227541d1e005253b571e0e73b85543b5679b0be84ed6e');
 COMMIT;
 @@003-verify-oracle.sql
 exit success

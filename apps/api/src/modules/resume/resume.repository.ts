@@ -1,4 +1,6 @@
 import { Inject, Injectable } from "@nestjs/common";
+import type { QueryRunner } from "typeorm";
+import { resumeFields, type ResumeFields } from "@face/shared";
 import { z } from "zod";
 import {
   resumeListSchema,
@@ -8,6 +10,7 @@ import {
 import { OracleStore } from "../../infrastructure/database.js";
 import { ApiError } from "../../infrastructure/http.js";
 const row = z.object({
+  STRUCTURED_JSON: z.string().nullable(),
   ID: z.string(),
   ORIGINAL_FILENAME: z.string(),
   SOURCE_KIND: z.string(),
@@ -45,11 +48,13 @@ export class ResumeRepository {
     );
     return resumeListSchema.parse(rows.map((value) => this.dto(value)));
   }
-  async get(owner: string, id: string) {
+  async get(owner: string, id: string, runner?: QueryRunner) {
     const rows = await this.db.rows(
-      "SELECT * FROM face_app.face_resumes WHERE owner_id=:1 AND id=:2 AND delete_requested_at IS NULL",
+      "SELECT * FROM face_app.face_resumes WHERE owner_id=:1 AND id=:2 AND delete_requested_at IS NULL" +
+        (runner ? " FOR UPDATE" : ""),
       [owner, id],
       row,
+      runner,
     );
     const value = rows[0];
     if (!value) throw new ApiError("E_NOT_FOUND", "未找到这份简历", 404);
@@ -86,10 +91,46 @@ export class ResumeRepository {
     path: string,
     size = 0,
   ) {
-    await this.db.execute(
-      "INSERT INTO face_app.face_resumes(id,owner_id,source_kind,original_filename,original_path,file_size_bytes,extraction_status) VALUES(:1,:2,:3,:4,:5,:6,'processing')",
-      [id, owner, source, name, path, size],
-    );
+    await this.db.transaction(async (runner) => {
+      await this.db.execute(
+        "SELECT id FROM face_app.face_users WHERE id=:1 FOR UPDATE",
+        [owner],
+        runner,
+      );
+      const [quota] = await this.db.rows(
+        "SELECT COUNT(*) AS TOTAL FROM face_app.face_resumes WHERE owner_id=:1",
+        [owner],
+        z.object({ TOTAL: z.number() }),
+        runner,
+      );
+      if (!quota || quota.TOTAL >= 3)
+        throw new ApiError(
+          "E_RESUME_LIMIT",
+          "每个账号最多保留三份简历，请先删除一份",
+          409,
+        );
+      await this.db.execute(
+        "INSERT INTO face_app.face_resumes(id,owner_id,source_kind,original_filename,original_path,file_size_bytes,extraction_status) VALUES(:1,:2,:3,:4,:5,:6,'processing')",
+        [id, owner, source, name, path, size],
+        runner,
+      );
+    });
+  }
+  structure(value: z.infer<typeof row>) {
+    return value.STRUCTURED_JSON
+      ? resumeFields.parse(JSON.parse(value.STRUCTURED_JSON) as unknown)
+      : null;
+  }
+  async saveStructure(owner: string, id: string, content: ResumeFields | null) {
+    return this.db.transaction(async (runner) => {
+      await this.get(owner, id, runner);
+      await this.db.execute(
+        "UPDATE face_app.face_resumes SET structured_json=:1,updated_at=SYSTIMESTAMP WHERE owner_id=:2 AND id=:3",
+        [content === null ? null : JSON.stringify(content), owner, id],
+        runner,
+      );
+      return { structured: content };
+    });
   }
   async extracting(owner: string, id: string) {
     await this.db.execute(

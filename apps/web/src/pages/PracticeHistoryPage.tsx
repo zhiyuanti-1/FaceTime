@@ -27,7 +27,7 @@ export function PracticeHistoryPage() {
         title="每一次认真回答，都有迹可循。"
         description="打开一份练习，继续作答或回看已经保存的内容。"
         aside={
-          <Link className="text-link" to="/practice">
+          <Link className="text-link" to="/practice/new">
             开始新的练习 ↗
           </Link>
         }
@@ -42,26 +42,32 @@ export function PracticeHistoryPage() {
           <p>正在读取记录…</p>
         ) : items.length ? (
           items.map((item, i) => (
-            <Link
-              className="history-row"
-              to={`/practice/${item.id}`}
-              key={item.id}
-            >
-              <span className="section-number">
-                {String(items.length - i).padStart(2, "0")}
-              </span>
-              <div>
-                <h3>
-                  {item.answered === item.count ? "已完成练习" : "继续这次练习"}
-                </h3>
-                <p>
-                  {formatDate(item.createdAt)} · {item.count} 道题
-                </p>
-              </div>
-              <span>
-                {item.answered} / {item.count} 已回答 →
-              </span>
-            </Link>
+            <div key={item.id}>
+              <Link className="history-row" to={`/practice/${item.id}`}>
+                <span className="section-number">
+                  {String(items.length - i).padStart(2, "0")}
+                </span>
+                <div>
+                  <h3>
+                    {item.answered + item.skipped === item.count
+                      ? "已完成练习"
+                      : "继续这次练习"}
+                  </h3>
+                  <p>
+                    {item.jobTitle || "知识专项"} · {formatDate(item.createdAt)}{" "}
+                    · {item.count} 道题
+                  </p>
+                </div>
+                <span>
+                  {item.answered} / {item.count} 已回答 →
+                </span>
+              </Link>
+              {item.latestReport && (
+                <Link to={`/practice/${item.id}/report`}>
+                  查看报告{item.latestReport.stale && "（已过期）"}
+                </Link>
+              )}
+            </div>
           ))
         ) : (
           <EmptyState

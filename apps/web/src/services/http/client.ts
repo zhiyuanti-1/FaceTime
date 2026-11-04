@@ -15,7 +15,10 @@ export async function request<T>(
 ): Promise<T> {
   const controller = new AbortController();
   const timeout =
-    path.startsWith("/resumes") && options.method === "POST" ? 960000 : 30000;
+    options.method === "POST" &&
+    (path.startsWith("/resumes") || path.startsWith("/practices"))
+      ? 960000
+      : 30000;
   const timer = setTimeout(() => controller.abort(), timeout);
   const abort = () => controller.abort();
   options.signal?.addEventListener("abort", abort, { once: true });
@@ -56,4 +59,35 @@ export async function request<T>(
 }
 export function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "操作失败，请重试";
+}
+
+export async function requestFile(path: string, signal: AbortSignal) {
+  const response = await fetch(`/api/v1${path}`, {
+    credentials: "include",
+    signal,
+  });
+  if (response.status === 401)
+    window.dispatchEvent(new Event("face:unauthorized"));
+  if (!response.ok)
+    throw new RequestError("无法读取附件，请重试", response.status);
+  const file = await response.blob();
+  const mediaType = file.type.split(";")[0];
+  if (mediaType === "application/octet-stream") {
+    const signature = new Uint8Array(await file.slice(0, 8).arrayBuffer());
+    const png = [137, 80, 78, 71, 13, 10, 26, 10].every(
+      (byte, index) => signature[index] === byte,
+    );
+    const jpeg =
+      signature[0] === 255 && signature[1] === 216 && signature[2] === 255;
+    if (png || jpeg)
+      return file.slice(0, file.size, png ? "image/png" : "image/jpeg");
+  }
+  if (
+    !["application/pdf", "image/png", "image/jpeg", "text/plain"].includes(
+      mediaType ?? "",
+    )
+  ) {
+    throw new RequestError("该附件格式需要下载后查看", 415);
+  }
+  return file;
 }

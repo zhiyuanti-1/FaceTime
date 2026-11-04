@@ -1,4 +1,5 @@
 import "reflect-metadata";
+import { setupApiDocs } from "./infrastructure/api-docs.js";
 import { NestFactory } from "@nestjs/core";
 import type { NestExpressApplication } from "@nestjs/platform-express";
 import cookieParser from "cookie-parser";
@@ -7,12 +8,13 @@ import { Errors } from "./infrastructure/http.js";
 import { config } from "./config.js";
 export async function createApp() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule, {
-    logger: false,
+    logger: ["log", "warn", "error"],
     abortOnError: false,
   });
   app.useBodyParser("json", { limit: "2mb" });
   app.use(cookieParser());
   app.useGlobalFilters(new Errors());
+  setupApiDocs(app);
   app.enableShutdownHooks();
   return app;
 }
@@ -24,7 +26,9 @@ async function main() {
     await app.close();
     throw error;
   }
-  console.info(`Face API ready: http://${config.API_HOST}:${config.API_PORT}`);
+  const address = await app.getUrl();
+  console.info(`后端已启动 ${address}`);
+  console.info(`接口文档 ${address}/doc.html · OpenAPI ${address}/v3/api-docs`);
 }
 main().catch((error: unknown) => {
   if (
@@ -37,7 +41,7 @@ main().catch((error: unknown) => {
     return;
   }
   console.error(
-    "后端启动失败，请检查apps/api/.env、Oracle连接和005迁移状态；未输出凭证或SQL参数",
+    "后端启动失败，请检查apps/api/.env、Oracle连接和Oracle迁移状态；未输出凭证或SQL参数",
   );
   process.exitCode = 1;
 });

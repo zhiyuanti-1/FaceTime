@@ -2,6 +2,7 @@
 @import "./workbench-login.css";
 @import "./workbench-editor.css";
 @import "./workbench-documents.css";
+@import "./workbench-resume.css";
 @import "./workbench-practice.css";
 :root {
   font-family: "Microsoft YaHei", "PingFang SC", sans-serif;

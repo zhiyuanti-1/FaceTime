@@ -1,11 +1,16 @@
+import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import { Action, Feedback, PageHeading } from "../../components/WorkbenchUi";
 import { useAnswerWorkspace } from "./use-answer-workspace";
 import { QuestionIndex } from "./QuestionIndex";
 export function AnswerWorkspace() {
+  const [consent, setConsent] = useState(false);
   const { id } = useParams();
   const {
     practice,
+    score,
+    skip,
+    scoreTurn,
     index,
     draft,
     error,
@@ -43,6 +48,10 @@ export function AnswerWorkspace() {
               QUESTION {String(index + 1).padStart(2, "0")}
             </span>
             <h2>{turn.question.text}</h2>
+            {turn.question.anchorQuote && (
+              <blockquote>{turn.question.anchorQuote}</blockquote>
+            )}
+            {turn.status === "skipped" && <p>已跳过</p>}
             <p className="muted">
               {turn.question.topicName} · 难度 {turn.question.difficulty} ·{" "}
               {turn.question.stage === "seed" ? "种子题" : "正式题"}
@@ -74,7 +83,7 @@ export function AnswerWorkspace() {
                   还原
                 </Action>
                 <Action
-                  disabled={busy || !draft.trim()}
+                  disabled={busy || !dirty || !draft.trim()}
                   onClick={() => {
                     void save();
                   }}
@@ -83,11 +92,67 @@ export function AnswerWorkspace() {
                 </Action>
               </div>
             </div>
-            <p className="muted">本阶段不生成评分，也不会自动改写你的回答。</p>
+            <div className="answer-actions">
+              <Action
+                variant="quiet"
+                disabled={busy || index === 0}
+                onClick={() => select(index - 1)}
+              >
+                上一题
+              </Action>
+              <Action
+                variant="quiet"
+                disabled={busy || index + 1 === practice.turns.length}
+                onClick={() => select(index + 1)}
+              >
+                下一题
+              </Action>
+              <Action
+                variant="quiet"
+                disabled={
+                  busy ||
+                  dirty ||
+                  !!turn.answerText ||
+                  turn.status === "skipped"
+                }
+                onClick={skip}
+              >
+                跳过
+              </Action>
+            </div>
+            <label>
+              <input
+                type="checkbox"
+                checked={consent}
+                onChange={(event) => setConsent(event.target.checked)}
+              />{" "}
+              同意发送评分所需文本给 DeepSeek
+            </label>
+            <Action
+              variant="secondary"
+              disabled={busy || dirty || !turn.answerText || !consent}
+              onClick={scoreTurn}
+            >
+              评估本题
+            </Action>
+            {score && (
+              <p>
+                本题评分：
+                {score.totalScoreRange?.join("–") ??
+                  score.totalScore ??
+                  "暂无有效分"}
+                {score.needsReview && " · 需复核"}
+                {score.improvements.length > 0 &&
+                  ` · ${score.improvements.join("；")}`}
+              </p>
+            )}
+            <p>
+              <Link to={`/practice/${practice.id}/report`}>查看或生成报告</Link>
+            </p>
           </section>
         </div>
       ) : (
-        <p className="muted">正在读取练习…</p>
+        !error && <p className="muted">正在读取练习…</p>
       )}
     </>
   );

@@ -1,69 +1,138 @@
 import { useEffect, useState } from "react";
-import {
-  PageHeading,
-  Feedback,
-  EmptyState,
-} from "../../components/WorkbenchUi";
+import { Action, PageHeading, Feedback } from "../../components/WorkbenchUi";
 import { coreApi } from "../../services/repositories/core-api";
+import { errorMessage } from "../../services/http/client";
 import { useResumeWorkspace } from "./use-resume-workspace";
 import { ResumeUpload } from "./ResumeUpload";
 import { ResumeLibrary } from "./ResumeLibrary";
 import { ResumeDocument } from "./ResumeDocument";
+import { ResumeStructureEditor } from "./ResumeStructureEditor";
+import { ResumeAttachment } from "./ResumeAttachment";
+
 export function ResumeWorkspace() {
+  const [adding, setAdding] = useState(false);
+  const [fieldsDirty, setFieldsDirty] = useState(false);
+  const [fieldsBusy, setFieldsBusy] = useState(false);
+  const [text, setText] = useState("");
+  const [maxMb, setMaxMb] = useState<number>();
+  const [settingsError, setSettingsError] = useState("");
   const state = useResumeWorkspace();
-  const [maxMb, setMaxMb] = useState(4);
+  const busy = !!state.busy || fieldsBusy;
   useEffect(() => {
+    if (!adding) return;
     coreApi
       .settings()
       .then((value) => setMaxMb(value.uploadMaxMb))
-      .catch(() => state.setError("无法读取上传配置，请刷新页面重试"));
-  }, []);
+      .catch((error) => setSettingsError(errorMessage(error)));
+  }, [adding]);
+  function back() {
+    if (
+      (state.dirty || fieldsDirty) &&
+      !window.confirm("确认放弃尚未保存的简历修改或草稿？")
+    )
+      return;
+    setAdding(false);
+    setText("");
+    state.close();
+  }
+
   return (
     <>
       <PageHeading
         number="01"
-        title="先从一份简历开始。"
-        description="上传、核对原文，再开始属于你的定向练习。"
-        aside={<span className="workspace-note">你的经历，始终由你确认。</span>}
-      />
-      <ResumeUpload
-        busy={!!state.busy}
-        onUpload={state.upload}
-        maxMb={maxMb}
-        onError={state.setError}
+        title={state.selected ? "简历详情" : adding ? "新增简历" : "我的简历"}
+        description={
+          state.selected
+            ? "按章节核对内容，旁边可查看导入的原件。"
+            : `已使用 ${state.items.length} / 3 个简历名额`
+        }
+        aside={
+          (adding || state.selected) && (
+            <Action variant="secondary" disabled={busy} onClick={back}>
+              返回简历列表
+            </Action>
+          )
+        }
       />
       <Feedback message={state.error} />
       <Feedback message={state.notice} tone="success" />
       <Feedback message={state.busy} tone="info" />
-      <div className="resume-workspace">
+      {state.selected ? (
+        <>
+          <div className="resume-detail-layout">
+            <ResumeStructureEditor
+              key={state.selected.id}
+              resume={state.selected}
+              imported={state.fieldsDraft}
+              onDiscardImport={state.clearFieldsDraft}
+              disabled={!!state.busy || state.dirty}
+              onBusy={setFieldsBusy}
+              onDirty={setFieldsDirty}
+            />
+            <ResumeAttachment key={state.selected.id} resume={state.selected} />
+          </div>
+          <details className="paper-panel resume-source-tools">
+            <summary>核对识别原文与练习入口</summary>
+            <ResumeDocument
+              key={state.selected.id}
+              resume={state.selected}
+              draft={state.draft}
+              onDraft={state.setDraft}
+              onSave={state.save}
+              onRetry={state.recognize}
+              onDiscard={state.discard}
+              busy={busy || fieldsDirty}
+              dirty={state.dirty}
+            />
+          </details>
+        </>
+      ) : adding ? (
+        <>
+          <Feedback message={settingsError} />
+          {maxMb !== undefined && (
+            <ResumeUpload
+              busy={busy || state.items.length >= 3}
+              maxMb={maxMb}
+              onUpload={state.upload}
+              onError={state.setError}
+            />
+          )}
+          <details className="paper-panel resume-source-tools">
+            <summary>粘贴简历文本</summary>
+            <textarea
+              aria-label="粘贴简历文本"
+              value={text}
+              maxLength={200000}
+              onChange={(event) => setText(event.target.value)}
+              disabled={busy}
+            />
+            <Action
+              disabled={!text.trim() || busy || state.items.length >= 3}
+              onClick={() => void state.paste(text)}
+            >
+              保存粘贴简历
+            </Action>
+          </details>
+        </>
+      ) : state.loading ? (
+        <p>正在读取简历列表…</p>
+      ) : !state.listReady ? (
+        <Action variant="secondary" onClick={() => void state.retryList()}>
+          重新读取简历列表
+        </Action>
+      ) : (
         <ResumeLibrary
           items={state.items}
-          selectedId={state.selected?.id}
-          onSelect={(id) => {
-            void state.select(id);
+          busy={busy}
+          onSelect={(id) => void state.select(id)}
+          onRemove={(id) => void state.remove(id)}
+          onAdd={() => {
+            setSettingsError("");
+            state.setError("");
+            setAdding(true);
           }}
-          busy={!!state.busy}
-          loading={state.loading}
         />
-        {state.selected ? (
-          <ResumeDocument
-            key={state.selected.id}
-            resume={state.selected}
-            draft={state.draft}
-            onDraft={state.setDraft}
-            onSave={state.save}
-            onRetry={state.recognize}
-            onDiscard={state.discard}
-            busy={!!state.busy}
-            dirty={state.dirty}
-          />
-        ) : (
-          <EmptyState
-            title="让简历里的每一句，都被准确看见。"
-            description="上传后，这里会展示完整识别原文和确认文本。不会自动补全经历，也不会用AI改写你的内容。"
-          />
-        )}
-      </div>
+      )}
     </>
   );
 }

@@ -221,3 +221,29 @@
     font-size: 23px;
   }
 }
+
+.workbench-header nav {
+  margin-left: auto;
+  flex-wrap: wrap;
+  align-items: center;
+  column-gap: clamp(10px, 2vw, 28px);
+  row-gap: 0;
+}
+.message-entry {
+  font-size: 13px;
+  color: #52637c;
+  white-space: nowrap;
+}
+.workbench-header nav a {
+  min-height: 44px;
+}
+.workbench-header .account {
+  margin-left: 0;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+@media (max-width: 700px) {
+  .workbench-header nav {
+    justify-content: flex-end;
+  }
+}

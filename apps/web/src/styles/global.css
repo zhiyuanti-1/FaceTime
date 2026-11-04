@@ -2,13 +2,5 @@
 @import "base.css";
 @import "layout.css";
 @import "../components/preview-ui.css";
-@import "../pages/home-page.css";
-@import "../pages/setup-page.css";
-@import "../pages/resume-page.css";
-@import "../pages/interview-page.css";
-@import "../pages/report-page.css";
-@import "../pages/history-page.css";
-@import "../pages/settings-page.css";
-@import "../pages/degraded-page.css";
 @import "responsive-tablet.css";
 @import "responsive-mobile.css";

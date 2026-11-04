@@ -7,7 +7,7 @@ export function ResumeUpload({
   onError,
 }: {
   busy: boolean;
-  onUpload: (file: File) => Promise<void>;
+  onUpload: (file: File) => Promise<void | boolean>;
   maxMb: number;
   onError: (message: string) => void;
 }) {
@@ -17,8 +17,8 @@ export function ResumeUpload({
   const [dragging, setDragging] = useState(false);
   function choose(value: File | undefined) {
     if (!value) return;
-    if (!/\.(pdf|docx?|txt)$/i.test(value.name)) {
-      onError("仅支持PDF、DOC、DOCX或UTF-8 TXT文件");
+    if (!/\.(pdf|docx?|txt|png|jpe?g)$/i.test(value.name)) {
+      onError("仅支持PDF、DOC、DOCX、UTF-8 TXT、PNG 或 JPEG文件");
       return;
     }
     if (value.size > maxMb * 1024 * 1024) {
@@ -36,17 +36,20 @@ export function ResumeUpload({
   }
   async function upload() {
     if (!file) return;
-    await onUpload(file);
+    if ((await onUpload(file)) === false) return;
     setFile(null);
     setAgreed(false);
     if (input.current) input.current.value = "";
   }
-  const pdf = !!file && /\.pdf$/i.test(file.name);
+  const cloudOcr = !!file && /\.(pdf|png|jpe?g)$/i.test(file.name);
   return (
     <section className="upload-panel">
       <div>
         <span className="small-heading">导入你的简历</span>
-        <p>支持 Word、PDF 与 TXT。完整保留提取原文，不做 AI 润色。</p>
+        <p>
+          支持 Word、PDF、TXT、PNG 与
+          JPEG。完整保留提取原文，由本机模型生成待核对草稿。
+        </p>
       </div>
       <div
         className={`upload-drop ${dragging ? "dragging" : ""}`}
@@ -66,13 +69,13 @@ export function ResumeUpload({
           <p>
             {file
               ? `${(file.size / 1024).toFixed(1)} KB · 尚未上传`
-              : `.doc / .docx / .pdf / .txt · 不超过 ${maxMb}MB`}
+              : `.doc / .docx / .pdf / .txt / .png / .jpg · 不超过 ${maxMb}MB`}
           </p>
         </div>
         <input
           ref={input}
           type="file"
-          accept=".pdf,.doc,.docx,.txt"
+          accept=".pdf,.doc,.docx,.txt,.png,.jpg,.jpeg"
           disabled={busy}
           onChange={(e) => choose(e.target.files?.[0])}
           className="visually-hidden"
@@ -89,22 +92,24 @@ export function ResumeUpload({
           onClick={() => {
             void upload();
           }}
-          disabled={busy || !file || (pdf && !agreed)}
+          disabled={busy || !file || (cloudOcr && !agreed)}
         >
-          {busy ? "正在处理…" : "上传并提取 →"}
+          {busy ? "正在处理…" : "确认导入 →"}
         </Action>
       </div>
-      {pdf && (
-        <label className="consent">
-          <input
-            type="checkbox"
-            checked={agreed}
-            onChange={(e) => setAgreed(e.target.checked)}
-            disabled={busy}
-          />
-          我确认将这份 PDF 发送至百度 OCR
-          做文字识别；原文件与结果保存在当前账号下。
-        </label>
+      {cloudOcr && (
+        <>
+          <label className="consent">
+            <input
+              type="checkbox"
+              checked={agreed}
+              onChange={(e) => setAgreed(e.target.checked)}
+              disabled={busy}
+            />
+            我确认将这份 PDF 或图片 发送至百度 OCR
+            做文字识别；原文件与结果保存在当前账号下。
+          </label>
+        </>
       )}
       <p className="upload-note">
         Word / TXT 在本机提取文字；PDF

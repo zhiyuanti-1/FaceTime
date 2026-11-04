@@ -1,3 +1,5 @@
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { ApiJsonBody } from "../../infrastructure/api-docs.js";
 import {
   Body,
   Controller,
@@ -14,10 +16,14 @@ import { input, type AccountRequest } from "../../infrastructure/http.js";
 import { config } from "../../config.js";
 import { AuthService } from "./auth.service.js";
 import { AuthGuard, sessionCookie } from "./auth.guard.js";
+@ApiTags("登录与会话")
 @Controller("api/v1/auth")
 export class AuthController {
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}
-  @Post("login") async login(
+  @ApiOperation({ summary: "管理员登录" })
+  @Post("login")
+  @ApiJsonBody(loginInput)
+  async login(
     @Body() body: unknown,
     @Res({ passthrough: true }) response: Response,
   ) {
@@ -32,10 +38,15 @@ export class AuthController {
     });
     return result.user;
   }
-  @UseGuards(AuthGuard) @Get("me") me(@Req() request: AccountRequest) {
+  @ApiOperation({ summary: "查看当前登录账号" })
+  @UseGuards(AuthGuard)
+  @Get("me")
+  me(@Req() request: AccountRequest) {
     return request.account;
   }
-  @Post("logout") async logout(
+  @ApiOperation({ summary: "退出登录" })
+  @Post("logout")
+  async logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {

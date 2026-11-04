@@ -1,3 +1,6 @@
+import { ResumeDebugController } from "./modules/resume/resume-debug.controller.js";
+import { ApiOperation, ApiTags } from "@nestjs/swagger";
+import { LocalResumeModel } from "./providers/local-resume-model.js";
 import { PracticeStateRepository } from "./modules/practice/practice-state.repository.js";
 import { AnswerScoringService } from "./modules/practice/answer-scoring.service.js";
 import { ReportRepository } from "./modules/practice/report.repository.js";
@@ -23,14 +26,20 @@ import { QuestionRepository } from "./modules/practice/question.repository.js";
 import { PracticeRepository } from "./modules/practice/practice.repository.js";
 import { PracticeService } from "./modules/practice/practice.service.js";
 import { PracticeController } from "./modules/practice/practice.controller.js";
+@ApiTags("系统状态")
 @Controller("api")
 class SystemController {
   constructor(@Inject(OracleStore) private readonly db: OracleStore) {}
-  @Get("health") async health() {
+  @ApiOperation({ summary: "检查服务与数据库" })
+  @Get("health")
+  async health() {
     await this.db.execute("SELECT 1 FROM dual");
     return { ok: true, version: "0.3.0" };
   }
-  @UseGuards(AuthGuard) @Get("v1/settings") settings() {
+  @ApiOperation({ summary: "查看本机设置" })
+  @UseGuards(AuthGuard)
+  @Get("v1/settings")
+  settings() {
     return {
       baiduConfigured: !!(config.BAIDU_AK && config.BAIDU_SK),
       ocrEndpoint: config.BAIDU_OCR_ENDPOINT,
@@ -47,6 +56,7 @@ class SystemController {
     WorkspaceController,
     AuthController,
     ResumeController,
+    ResumeDebugController,
     PracticeController,
   ],
   providers: [
@@ -64,6 +74,7 @@ class SystemController {
     AuthGuard,
     ResumeRepository,
     ResumeService,
+    LocalResumeModel,
     BaiduOcr,
     DocumentExtractor,
     QuestionRepository,
