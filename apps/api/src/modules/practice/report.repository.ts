@@ -1,3 +1,4 @@
+import type { QueryRunner } from "typeorm";
 import { Inject, Injectable } from "@nestjs/common";
 import { z } from "zod";
 import { randomUUID } from "node:crypto";
@@ -16,11 +17,12 @@ export class ReportRepository {
     if (!rows[0]) return null;
     return reportSchema.parse(JSON.parse(rows[0].PAYLOAD_JSON) as unknown);
   }
-  async stale(report: Report) {
+  async stale(report: Report, runner?: QueryRunner) {
     const rows = await this.db.rows(
       "SELECT id,answer_revision FROM face_app.face_turns WHERE session_id=:1",
       [report.sessionId],
       z.object({ ID: z.string(), ANSWER_REVISION: z.number() }),
+      runner,
     );
     return (
       rows.length !== report.turns.length ||
@@ -51,7 +53,7 @@ export class ReportRepository {
       );
       if (!sessions.length)
         throw new ApiError("E_NOT_FOUND", "练习已删除", 404);
-      if (await this.stale(report))
+      if (await this.stale(report, runner))
         throw new ApiError("E_STALE", "回答已修改，请重新生成报告", 409);
       const counts = await this.db.rows(
         "SELECT NVL(MAX(revision),0) value FROM face_app.face_reports WHERE session_id=:1",

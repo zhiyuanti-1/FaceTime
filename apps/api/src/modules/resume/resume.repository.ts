@@ -11,6 +11,8 @@ import { OracleStore } from "../../infrastructure/database.js";
 import { ApiError } from "../../infrastructure/http.js";
 const row = z.object({
   STRUCTURED_JSON: z.string().nullable(),
+  DELETE_REQUESTED_AT: z.date().nullable(),
+  IS_DEFAULT: z.number(),
   ID: z.string(),
   ORIGINAL_FILENAME: z.string(),
   SOURCE_KIND: z.string(),
@@ -37,12 +39,14 @@ const errors: Record<string, string> = {
   E_OCR_SIZE: "文档编码超过OCR大小限制",
   E_DOCUMENT_PARSE: "文档提取失败，请更换格式",
 };
+const selectResume =
+  "SELECT r.*,CASE WHEN r.delete_requested_at IS NULL AND r.id=(SELECT JSON_VALUE(p.preferences_json,'$.defaultResumeId') FROM face_app.face_preferences p WHERE p.user_id=r.owner_id) THEN 1 ELSE 0 END is_default FROM face_app.face_resumes r";
 @Injectable()
 export class ResumeRepository {
   constructor(@Inject(OracleStore) private readonly db: OracleStore) {}
   async list(owner: string) {
     const rows = await this.db.rows(
-      "SELECT * FROM face_app.face_resumes WHERE owner_id=:1 AND delete_requested_at IS NULL ORDER BY created_at DESC",
+      selectResume + " WHERE r.owner_id=:1 ORDER BY r.created_at DESC",
       [owner],
       row,
     );
@@ -50,7 +54,8 @@ export class ResumeRepository {
   }
   async get(owner: string, id: string, runner?: QueryRunner) {
     const rows = await this.db.rows(
-      "SELECT * FROM face_app.face_resumes WHERE owner_id=:1 AND id=:2 AND delete_requested_at IS NULL" +
+      selectResume +
+        " WHERE r.owner_id=:1 AND r.id=:2 AND r.delete_requested_at IS NULL" +
         (runner ? " FOR UPDATE" : ""),
       [owner, id],
       row,
@@ -64,6 +69,8 @@ export class ResumeRepository {
     return {
       id: value.ID,
       filename: value.ORIGINAL_FILENAME,
+      isDefault: value.IS_DEFAULT === 1,
+      deletionPending: value.DELETE_REQUESTED_AT !== null,
       source: value.SOURCE_KIND,
       status: value.EXTRACTION_STATUS,
       rawText: value.RAW_TEXT ?? "",
@@ -114,6 +121,61 @@ export class ResumeRepository {
         [id, owner, source, name, path, size],
         runner,
       );
+      if (quota.TOTAL === 0) {
+        await this.db.execute(
+          "MERGE INTO face_app.face_preferences p USING(SELECT :1 id FROM dual) s ON(p.user_id=s.id) WHEN MATCHED THEN UPDATE SET preferences_json=JSON_MERGEPATCH(p.preferences_json,:2 RETURNING CLOB),updated_at=SYSTIMESTAMP WHEN NOT MATCHED THEN INSERT(user_id,preferences_json) VALUES(:3,:4)",
+          [
+            owner,
+            JSON.stringify({ defaultResumeId: id }),
+            owner,
+            JSON.stringify({ defaultResumeId: id }),
+          ],
+          runner,
+        );
+      }
+    });
+  }
+  async setDefault(owner: string, id: string) {
+    return this.db.transaction(async (runner) => {
+      await this.db.execute(
+        "SELECT id FROM face_app.face_users WHERE id=:1 FOR UPDATE",
+        [owner],
+        runner,
+      );
+      await this.get(owner, id, runner);
+      await this.db.execute(
+        "MERGE INTO face_app.face_preferences p USING(SELECT :1 id FROM dual) s ON(p.user_id=s.id) WHEN MATCHED THEN UPDATE SET preferences_json=JSON_MERGEPATCH(p.preferences_json,:2 RETURNING CLOB),updated_at=SYSTIMESTAMP WHEN NOT MATCHED THEN INSERT(user_id,preferences_json) VALUES(:3,:4)",
+        [
+          owner,
+          JSON.stringify({ defaultResumeId: id }),
+          owner,
+          JSON.stringify({ defaultResumeId: id }),
+        ],
+        runner,
+      );
+      return { defaultId: id };
+    });
+  }
+  async beginDelete(owner: string, id: string) {
+    return this.db.transaction(async (runner) => {
+      await this.db.execute(
+        "SELECT id FROM face_app.face_users WHERE id=:1 FOR UPDATE",
+        [owner],
+        runner,
+      );
+      const rows = await this.db.rows(
+        "SELECT original_path FROM face_app.face_resumes WHERE owner_id=:1 AND id=:2 FOR UPDATE",
+        [owner, id],
+        z.object({ ORIGINAL_PATH: z.string() }),
+        runner,
+      );
+      if (!rows[0]) throw new ApiError("E_NOT_FOUND", "未找到这份简历", 404);
+      await this.db.execute(
+        "UPDATE face_app.face_resumes SET delete_requested_at=NVL(delete_requested_at,SYSTIMESTAMP) WHERE owner_id=:1 AND id=:2",
+        [owner, id],
+        runner,
+      );
+      return rows[0];
     });
   }
   structure(value: z.infer<typeof row>) {

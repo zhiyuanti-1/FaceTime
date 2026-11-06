@@ -37,10 +37,15 @@ export class DataService {
     }
   }
   async removeResume(owner: string, id: string) {
-    const row = await this.resumes.get(owner, id);
+    const row = await this.resumes.beginDelete(owner, id);
     await this.removeFile(row.ORIGINAL_PATH);
-    await this.preferences.clearResume(owner, id);
-    await this.db.transaction(async (runner) => {
+    const defaultId = await this.db.transaction(async (runner) => {
+      await this.db.execute(
+        "SELECT id FROM face_app.face_users WHERE id=:1 FOR UPDATE",
+        [owner],
+        runner,
+      );
+      const nextDefault = await this.preferences.clearResume(owner, id, runner);
       await this.db.execute(
         "UPDATE face_app.face_sessions SET resume_id=NULL WHERE owner_id=:1 AND resume_id=:2",
         [owner, id],
@@ -51,8 +56,9 @@ export class DataService {
         [owner, id],
         runner,
       );
+      return nextDefault;
     });
-    return { ok: true };
+    return { ok: true, defaultId };
   }
   async cleanupAudio(owner: string) {
     const rows = await this.db.rows(
@@ -70,6 +76,23 @@ export class DataService {
     return { ok: true, removed: rows.length };
   }
   async removeAll(owner: string) {
+    await this.db.transaction(async (runner) => {
+      await this.db.execute(
+        "SELECT id FROM face_app.face_users WHERE id=:1 FOR UPDATE",
+        [owner],
+        runner,
+      );
+      await this.db.execute(
+        "UPDATE face_app.face_resumes SET delete_requested_at=NVL(delete_requested_at,SYSTIMESTAMP) WHERE owner_id=:1",
+        [owner],
+        runner,
+      );
+      await this.db.execute(
+        "UPDATE face_app.face_sessions SET delete_requested_at=NVL(delete_requested_at,SYSTIMESTAMP) WHERE owner_id=:1",
+        [owner],
+        runner,
+      );
+    });
     const rows = await this.db.rows(
       "SELECT original_path FROM face_app.face_resumes WHERE owner_id=:1",
       [owner],
@@ -78,6 +101,11 @@ export class DataService {
     for (const row of rows) await this.removeFile(row.ORIGINAL_PATH);
     await this.cleanupAudio(owner);
     await this.db.transaction(async (runner) => {
+      await this.db.execute(
+        "SELECT id FROM face_app.face_users WHERE id=:1 FOR UPDATE",
+        [owner],
+        runner,
+      );
       for (const sql of [
         "DELETE FROM face_app.face_rule_events WHERE turn_id IN(SELECT t.id FROM face_app.face_turns t JOIN face_app.face_sessions s ON s.id=t.session_id WHERE s.owner_id=:1)",
         "DELETE FROM face_app.face_audio_assets WHERE session_id IN(SELECT id FROM face_app.face_sessions WHERE owner_id=:1)",

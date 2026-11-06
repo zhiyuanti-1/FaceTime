@@ -4,3 +4,4 @@
 # Migration SHA-256 is byte-based; preserve executed Oracle SQL exactly.
 *.sql -text
 *.png binary
+*.bat text eol=crlf

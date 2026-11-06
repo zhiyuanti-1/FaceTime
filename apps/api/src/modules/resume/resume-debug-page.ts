@@ -17,7 +17,7 @@ export const resumeDebugPage = String.raw`<!doctype html>
 </style>
 <main>
   <h1>简历提示词调试</h1>
-  <p>PDF 或图片发送给百度 OCR。识别后的文字只发送给本机 Qwen。调试内容不会写入简历库。</p>
+  <p>PDF 或图片发送给百度 OCR。识别后的文字只发送给本机 Qwen2.5-7B-Instruct。调试内容不会写入简历库。</p>
   <form id="login" hidden>
     <label>管理员账号 <input name="username" autocomplete="username" required></label>
     <label>密码 <input name="password" type="password" autocomplete="current-password" required></label>
@@ -32,7 +32,7 @@ export const resumeDebugPage = String.raw`<!doctype html>
     <section>
       <h2><label for="prompt">2. 编辑提示词</label></h2>
       <textarea id="prompt"></textarea>
-      <label><input id="constrain" type="checkbox" checked>使用生产环境的 JSON 结构约束</label>
+      <p>已启用字段 Schema 约束解码。</p>
       <button id="reset" type="button">恢复默认提示词</button>
       <button id="run" type="button">运行本机模型</button>
     </section>
@@ -43,7 +43,7 @@ export const resumeDebugPage = String.raw`<!doctype html>
         <div><strong>模型原始输出</strong><pre id="raw"></pre></div>
         <div><strong>解析后的 JSON</strong><pre id="json"></pre></div>
       </div>
-      <details><summary>查看校验明细及通过原文核对的字段</summary><pre id="validation"></pre></details>
+      <details><summary>查看字段类型校验明细</summary><pre id="validation"></pre></details>
     </section>
   </div>
   <p id="status" role="status"></p>
@@ -102,7 +102,6 @@ export const resumeDebugPage = String.raw`<!doctype html>
     void action(byId("run"), "本机模型推理中…", async () => {
       const data = await request("/debug/resume/run", JSON.stringify({
         rawText: byId("text").value, prompt: byId("prompt").value,
-        constrain: byId("constrain").checked,
       }));
       show("raw", data.rawOutput);
       show("json", data.validJson ? JSON.stringify(JSON.parse(data.rawOutput), null, 2) : "无法解析为 JSON");
@@ -110,9 +109,8 @@ export const resumeDebugPage = String.raw`<!doctype html>
         data.finishReason === "stop" ? "生成正常结束" : "结束状态：" + (data.finishReason ?? "未知"),
         data.validJson ? "JSON 语法通过" : "JSON 语法不通过",
         data.validFields ? "字段结构通过" : "字段结构不通过",
-        data.grounding ? "原文核对保留 " + data.grounding.retained + " 项，丢弃 " + data.grounding.discarded + " 项" : "未执行原文核对",
       ].join(" · "));
-      show("validation", JSON.stringify(data.grounding?.result ?? data.issues, null, 2));
+      show("validation", JSON.stringify(data.issues, null, 2));
     });
   };
   void action(null, "正在检查登录…", open);

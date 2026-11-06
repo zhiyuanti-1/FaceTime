@@ -160,18 +160,31 @@ try {
       : "SKIP: real OCR network; configured credentials remain unused by this verification.",
   );
 } finally {
-  // Cleanup is limited to UUIDs created by this run, never pre-existing user data.
-  if (practiceId) {
-    await db.execute("DELETE FROM face_app.face_turns WHERE session_id=:1", [
-      practiceId,
-    ]);
-    await db.execute("DELETE FROM face_app.face_sessions WHERE id=:1", [
-      practiceId,
-    ]);
+  try {
+    // 仅清理本轮创建的UUID，不触碰原有用户数据。
+    if (practiceId) {
+      await db.execute("DELETE FROM face_app.face_turns WHERE session_id=:1", [
+        practiceId,
+      ]);
+      await db.execute("DELETE FROM face_app.face_sessions WHERE id=:1", [
+        practiceId,
+      ]);
+    }
+    for (const id of [resumeId, pdfId].filter(Boolean))
+      await db.execute("DELETE FROM face_app.face_resumes WHERE id=:1", [id]);
+    for (const path of [original, pdfOriginal].filter(Boolean))
+      await unlink(resolve(dataRoot, path));
+  } catch {
+    console.error(
+      "合成资料清理失败，请按本轮测试标识核对；未输出数据正文或凭证。",
+    );
+    process.exitCode = 1;
+  } finally {
+    try {
+      await db.onModuleDestroy();
+    } catch {
+      console.error("测试数据库连接关闭失败，请核对本轮进程是否退出。");
+      process.exitCode = 1;
+    }
   }
-  for (const id of [resumeId, pdfId].filter(Boolean))
-    await db.execute("DELETE FROM face_app.face_resumes WHERE id=:1", [id]);
-  for (const path of [original, pdfOriginal].filter(Boolean))
-    await unlink(resolve(dataRoot, path));
-  await db.onModuleDestroy();
 }

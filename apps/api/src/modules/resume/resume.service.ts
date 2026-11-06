@@ -20,6 +20,9 @@ export class ResumeService {
     @Inject(DocumentExtractor) private readonly extractor: DocumentExtractor,
     @Inject(LocalResumeModel) private readonly model: LocalResumeModel,
   ) {}
+  setDefault(owner: string, id: string) {
+    return this.repo.setDefault(owner, id);
+  }
   path(relative: string) {
     const path = resolve(dataRoot, relative);
     if (!path.startsWith(dataRoot + sep))

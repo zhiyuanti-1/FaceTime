@@ -57,12 +57,18 @@ globalThis.fetch = async (input, init) => {
     const request = JSON.parse(init.body);
     assert.equal(request.chat_template_kwargs.enable_thinking, false);
     if (request.messages[0].content === "调试样例提示词") {
-      assert.equal(request.response_format, undefined);
+      assert.equal(request.response_format.type, "json_schema");
+      assert.equal(request.response_format.json_schema.strict, true);
       assert.equal(request.messages[1].content, "姓名：合成候选人");
       return Response.json({
         choices: [
           { finish_reason: "length", message: { content: '{"未完成":' } },
         ],
+      });
+    }
+    if (modelName === "不在原文") {
+      return Response.json({
+        choices: [{ finish_reason: "stop", message: { content: "{}" } }],
       });
     }
     if (realLocalModel && modelName === "合成候选人")
@@ -113,16 +119,9 @@ globalThis.fetch = async (input, init) => {
 config.DEEPSEEK_API_KEY = randomUUID();
 config.BAIDU_AK = randomUUID();
 config.BAIDU_SK = randomUUID();
-const app = await NestFactory.create(AppModule, {
-  logger: false,
-  abortOnError: false,
-});
-app.use(cookieParser());
-app.useGlobalFilters(new Errors());
-setupApiDocs(app);
-await app.listen(0, "127.0.0.1");
-const base = (await app.getUrl()) + "/api/v1";
-const db = app.get(OracleStore);
+let app;
+let base;
+let db;
 const id = randomUUID();
 const username = "ia_" + id.slice(0, 8);
 const password = randomUUID();
@@ -191,6 +190,17 @@ function score(input) {
   };
 }
 try {
+  app = await NestFactory.create(AppModule, {
+    logger: false,
+    abortOnError: false,
+  });
+  app.useBodyParser("json", { limit: "2mb" });
+  app.use(cookieParser());
+  app.useGlobalFilters(new Errors());
+  setupApiDocs(app);
+  await app.listen(0, "127.0.0.1");
+  base = (await app.getUrl()) + "/api/v1";
+  db = app.get(OracleStore);
   await db.execute(
     "INSERT INTO face_app.face_users(id,username,password_hash) VALUES(:1,:2,:3)",
     [id, username, hashPassword(password)],
@@ -243,7 +253,6 @@ try {
     body: JSON.stringify({
       rawText,
       prompt: "调试样例提示词",
-      constrain: false,
     }),
   });
   assert.equal(debugRun.status, 201);
@@ -264,13 +273,72 @@ try {
   assert.equal(imported.body.structured.基本信息.姓名, modelName);
   assert.equal((await call(structuredPath)).body.structured, null);
   const edited = {
-    ...imported.body.structured,
-    基本信息: { ...imported.body.structured.基本信息, 姓名: "人工更正" },
+    基本信息: {
+      姓名: "人工更正",
+      性别: "女",
+      出生日期: "2000-01-02",
+      电话: "000-000",
+      邮箱: "synthetic@example.invalid",
+      微信号: "synthetic",
+      现居: "合成城市",
+      户籍: "合成户籍",
+      政治面貌: "合成政治面貌",
+      民族: "合成民族",
+    },
+    求职意向: {
+      岗位: "合成岗位",
+      行业: "合成行业",
+      城市: "合成城市",
+      薪资: "面议",
+      到岗时间: "随时到岗",
+      工作类型: "全职",
+    },
+    教育经历: [
+      {
+        学校: "合成学校",
+        学历: "本科",
+        专业: "合成专业",
+        开始: "2018",
+        结束: "2022-06",
+        学制: "4年制",
+        学习形式: "全日制",
+        排名: "5/120",
+      },
+    ],
+    "实习/工作经历": [
+      {
+        公司名: " 合成公司 ",
+        工作类型: "实习",
+        部门: "合成部门",
+        职位: "合成职位",
+        开始: "2021年01月",
+        结束: "至今",
+        主要工作内容: Array.from({ length: 30 }, () =>
+          "合成工作内容".repeat(200),
+        ),
+      },
+    ],
+    项目经历: [
+      {
+        项目名称: "合成项目",
+        开始: "2020",
+        结束: "2021",
+        职责: ["合成职责"],
+        成果: ["合成成果"],
+      },
+    ],
+    校园经历: [
+      { 组织名称: "合成组织", 职位: "合成职务", 主要工作内容: ["合成内容"] },
+    ],
+    技能: ["TypeScript"],
+    自我评价: "合成自评",
+    语言能力: [{ 语言: "英语", 等级: "合成等级" }],
+    爱好: ["合成爱好"],
+    其他: ["合成其他"],
   };
-  assert.equal(
-    (await call(structuredPath, edited, "PUT")).body.structured.基本信息.姓名,
-    "人工更正",
-  );
+  const savedFields = await call(structuredPath, edited, "PUT");
+  assert.equal(savedFields.status, 200, JSON.stringify(savedFields.body));
+  assert.equal(savedFields.body.structured.基本信息.姓名, "人工更正");
   assert.deepEqual((await call(structuredPath)).body.structured, edited);
   assert.equal(
     (await call(structuredPath, { name: "invalid" }, "PUT")).status,
@@ -510,30 +578,44 @@ try {
   console.error("IA verification failed at:", stage);
   throw error;
 } finally {
-  if (created) {
-    await app.get(DataService).removeAll(id);
-    await db.execute(
-      "DELETE FROM face_app.face_auth_sessions WHERE user_id=:1",
-      [id],
-    );
-    // OS-admin cleanup is limited to the exact synthetic account UUID+name created above.
-    const sql = `whenever sqlerror exit sql.sqlcode
+  try {
+    if (created) {
+      await app.get(DataService).removeAll(id);
+      await db.execute(
+        "DELETE FROM face_app.face_auth_sessions WHERE user_id=:1",
+        [id],
+      );
+      // 管理员收尾仅清理本轮创建且UUID与账号名均匹配的合成账号。
+      const sql = `whenever sqlerror exit sql.sqlcode
 alter session set container=FREEPDB1;
 DELETE FROM face_app.face_users WHERE id='${id}' AND username='${username}';
 COMMIT;
 exit
 `;
-    const result = spawnSync(sqlplus, ["-L", "-S", "/ as sysdba"], {
-      input: sql,
-      encoding: "utf8",
-      env: { ...process.env, NLS_LANG: "AMERICAN_AMERICA.AL32UTF8" },
-    });
-    assert.equal(
-      result.status,
-      0,
-      "Synthetic account cleanup failed; no unrelated account is targeted",
+      const result = spawnSync(sqlplus, ["-L", "-S", "/ as sysdba"], {
+        input: sql,
+        encoding: "utf8",
+        env: { ...process.env, NLS_LANG: "AMERICAN_AMERICA.AL32UTF8" },
+      });
+      assert.equal(
+        result.status,
+        0,
+        "Synthetic account cleanup failed; no unrelated account is targeted",
+      );
+    }
+  } catch {
+    console.error(
+      "合成资料清理失败，请按本轮测试标识核对；未输出数据正文或凭证。",
     );
+    process.exitCode = 1;
+  } finally {
+    try {
+      if (app) await app.close();
+    } catch {
+      console.error("测试服务关闭失败，请核对本轮进程是否退出。");
+      process.exitCode = 1;
+    } finally {
+      globalThis.fetch = originalFetch;
+    }
   }
-  await app.close();
-  globalThis.fetch = originalFetch;
 }

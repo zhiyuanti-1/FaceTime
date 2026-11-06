@@ -41,7 +41,7 @@ infra/              3.0 公网部署预留
    npm run db:check
    ```
 
-4. 下载 Knife4j、Windows CPU 推理程序和约 508 MiB 的 GGUF 模型。脚本校验下载哈希，已验证的资源可以复用。仅需接口文档时传 `-Component Docs`。模型下载连接不稳定时可传 `-UseModelMirror`。
+4. 下载 Knife4j、Windows Vulkan 推理程序和约 4.68GB 的 Qwen2.5-7B-Instruct Q4_K_M 两分片权重。脚本校验下载哈希，已验证的资源可以复用。仅需接口文档时传 `-Component Docs`。模型下载连接不稳定时可传 -UseModelMirror，运行程序下载连接不稳定时可传 -UseRuntimeMirror；镜像文件仍校验官方 SHA-256。
 
    ```powershell
    .\scripts\install-local-resume.ps1
@@ -56,6 +56,8 @@ infra/              3.0 公网部署预留
    ```powershell
    npm run dev
    ```
+
+   Windows 下双击 scripts/start-dev.bat，在一个窗口中启动本机模型、前端和后端。窗口打印访问地址，等待服务就绪后打开。关闭该窗口或按 Ctrl+C 会停止本次启动的全部进程。API 与 Web 端口占用时自动顺延，模型 17861 端口占用时退出并提示关闭现有实例。
 
 | 入口 | 默认地址 |
 |---|---|
@@ -80,8 +82,8 @@ infra/              3.0 公网部署预留
 
 ## 后端接口调试
 
-Knife4j 页面和 OpenAPI JSON 由同一个后端提供。使用后端启动日志中的端口，先访问 /api/health。如果健康检查正常、OpenAPI 正常而 /doc.html 返回 503，在仓库根运行 `.scriptsinstall-local-resume.ps1 -Component Docs` 后刷新页面。调试需要登录的接口时，先调用 POST /api/v1/auth/login。
-本机 Qwen 可对百度 OCR 原文进行结构化并写入 Oracle。每个账号最多保存三份简历，结构化结果支持查询、修改、清除和按简历 ID 重试导入。安装步骤和接口契约见 [技术约束 §19](docs/技术约束.md#19-cr-10-017-简历结构化接口与本机调试)。
+Knife4j 页面和 OpenAPI JSON 由同一个后端提供。使用后端启动日志中的端口，先访问 /api/health。如果健康检查正常、OpenAPI 正常而 /doc.html 返回 503，在仓库根运行 `./scripts/install-local-resume.ps1 -Component Docs` 后刷新页面。调试需要登录的接口时，先调用 POST /api/v1/auth/login。
+本机 Qwen2.5-7B-Instruct 可对百度 OCR 原文进行结构化并写入 Oracle。每个账号最多保存三份简历，结构化结果支持查询、修改、清除和按简历 ID 重试导入。安装步骤和接口契约见 [技术约束 §19](docs/技术约束.md#19-cr-10-017-简历结构化接口与本机调试)。
 
 ## 验证与公开仓库
 
@@ -93,7 +95,7 @@ npm run test:integration  # 需先启动 API；011基础流程验证
 npm run test:ia           # 本机 Oracle 与 HTTP 联调，模拟外部服务，测试后清理合成资料
 ```
 
-运行 `npm run test:ia` 时，SQL*Plus 需在 PATH 中，或在当前 PowerShell 用 `$env:FACE_SQLPLUS` 指向本机 sqlplus.exe。该测试需要 Oracle 本机管理权限清理合成账号。
+运行 `npm run test:ia` 时，SQL*Plus 需在 PATH 中，或在当前 PowerShell 用 `$env:FACE_SQLPLUS` 指向本机 sqlplus.exe。该测试需要 Oracle 本机管理权限清理合成账号。注意：启动阶段会执行正常应用初始化，可能更新配置管理员密码、注销会话并补入题库；随机测试账号不等于数据库环境隔离。测试隔离方案暂缓，日常数据所在库不要运行该测试，也不能将其作为只读检查。
 
 OCR 单元测试使用模拟上游响应，不会发送真实简历。真实百度调用需要单独验证。登录会话使用 HttpOnly Cookie，令牌只存数据库 SHA-256，密码存 scrypt 哈希，简历和练习按账号查找。应用仅绑定回环；网络攻击防御和公网发布留至 3.0。
 
@@ -110,3 +112,9 @@ OCR 单元测试使用模拟上游响应，不会发送真实简历。真实百�
 
 
 工作台和练习后端交接见 [技术约束 §15](docs/技术约束.md)。后续按“后端对话完成契约与测试→前端对话接入与浏览器验收”执行，不在前端硬编码原型示例。DeepSeek真实密钥只填apps/api/.env，模板不包含真值；未配置时API明确返回503，不生成模拟结果。
+
+### 启动器检查与停止范围
+
+启动器通过 Windows Job Object 管理本次进程树。窗口退出时，其启动的模型、前端和后端全部终止。其他终端原先启动的实例需要在对应窗口关闭。若提示词修改后仍看到旧内容，重启对应后端实例，并确认调试页端口与启动日志一致。
+
+一键启动器等待六个入口就绪后，末尾会显示完整地址表。提示词调试位于后端端口的 /debug/resume，接口文档位于同端口 /doc.html。端口自动顺延时，以该表的实际端口为准。

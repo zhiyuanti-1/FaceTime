@@ -156,3 +156,29 @@ describe("Baidu contract (mock transport only)", () => {
     );
   });
 });
+
+describe("事务启动失败的资源释放", () => {
+  for (const stage of ["connect", "startTransaction"] as const) {
+    it(`${stage} 失败仍释放连接且不执行用例`, async () => {
+      const { OracleStore } =
+        await import("../../apps/api/src/infrastructure/database");
+      const db = new OracleStore();
+      const runner = db.source.createQueryRunner();
+      vi.spyOn(db, "ready").mockResolvedValue();
+      vi.spyOn(db.source, "createQueryRunner").mockReturnValue(runner);
+      vi.spyOn(runner, "connect").mockResolvedValue(undefined);
+      vi.spyOn(runner, "startTransaction").mockResolvedValue();
+      const release = vi.spyOn(runner, "release").mockResolvedValue();
+      const rollback = vi
+        .spyOn(runner, "rollbackTransaction")
+        .mockResolvedValue();
+      const failure = new Error("合成启动故障");
+      vi.spyOn(runner, stage).mockRejectedValue(failure);
+      const useCase = vi.fn();
+      await expect(db.transaction(useCase)).rejects.toBe(failure);
+      expect(useCase).not.toHaveBeenCalled();
+      expect(rollback).not.toHaveBeenCalled();
+      expect(release).toHaveBeenCalledOnce();
+    });
+  }
+});

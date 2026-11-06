@@ -5,6 +5,8 @@ import { resumeAnalysisSchema } from "./ai.js";
 export const resumeSchema = z.object({
   id: z.string(),
   filename: z.string(),
+  isDefault: z.boolean(),
+  deletionPending: z.boolean(),
   source: z.string(),
   status: z.enum(["processing", "ready", "failed"]),
   rawText: z.string(),
@@ -144,22 +146,15 @@ export const structuredResume = z.strictObject({
 });
 export type StructuredResume = z.infer<typeof structuredResume>;
 
-const resumeField = z.string().trim().min(1).max(2000).nullable();
-const resumeDate = resumeField.refine(
-  (value) =>
-    value === null ||
-    /^(?:\d{4}(?:-(?:0[1-9]|1[0-2])(?:-(?:0[1-9]|[12]\d|3[01]))?)?|至今)$/.test(
-      value,
-    ),
-  "日期须为 YYYY、YYYY-MM、YYYY-MM-DD 或至今",
-);
+const resumeField = z.string().max(2000).nullable();
+const resumeItems = z.array(z.string().max(2000)).max(40);
 
-function createResumeFields(date: typeof resumeField) {
+function createResumeFields() {
   return z.strictObject({
     基本信息: z.strictObject({
       姓名: resumeField,
       性别: resumeField,
-      出生日期: date,
+      出生日期: resumeField,
       电话: resumeField,
       邮箱: resumeField,
       微信号: resumeField,
@@ -182,8 +177,8 @@ function createResumeFields(date: typeof resumeField) {
           学校: resumeField,
           学历: resumeField,
           专业: resumeField,
-          开始: date,
-          结束: date,
+          开始: resumeField,
+          结束: resumeField,
           学制: resumeField,
           学习形式: resumeField,
           排名: resumeField,
@@ -197,9 +192,9 @@ function createResumeFields(date: typeof resumeField) {
           工作类型: resumeField,
           部门: resumeField,
           职位: resumeField,
-          开始: date,
-          结束: date,
-          主要工作内容: excerpts,
+          开始: resumeField,
+          结束: resumeField,
+          主要工作内容: resumeItems,
         }),
       )
       .max(40),
@@ -207,10 +202,10 @@ function createResumeFields(date: typeof resumeField) {
       .array(
         z.strictObject({
           项目名称: resumeField,
-          开始: date,
-          结束: date,
-          职责: excerpts,
-          成果: excerpts,
+          开始: resumeField,
+          结束: resumeField,
+          职责: resumeItems,
+          成果: resumeItems,
         }),
       )
       .max(40),
@@ -219,19 +214,19 @@ function createResumeFields(date: typeof resumeField) {
         z.strictObject({
           组织名称: resumeField,
           职位: resumeField,
-          主要工作内容: excerpts,
+          主要工作内容: resumeItems,
         }),
       )
       .max(40),
-    技能: excerpts,
+    技能: resumeItems,
     自我评价: resumeField,
     语言能力: z
       .array(z.strictObject({ 语言: resumeField, 等级: resumeField }))
       .max(40),
-    爱好: excerpts,
-    其他: excerpts,
+    爱好: resumeItems,
+    其他: resumeItems,
   });
 }
-export const resumeFields = createResumeFields(resumeDate);
-export const resumeModelFields = createResumeFields(resumeField);
+export const resumeFields = createResumeFields();
+export const resumeModelFields = resumeFields;
 export type ResumeFields = z.infer<typeof resumeFields>;

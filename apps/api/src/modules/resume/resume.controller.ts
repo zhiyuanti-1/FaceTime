@@ -65,7 +65,11 @@ export class ResumeController {
     @Inject(ResumeRepository) private readonly repo: ResumeRepository,
     @Inject(ResumeService) private readonly service: ResumeService,
   ) {}
-  @ApiOperation({ summary: "列出简历" })
+  @ApiOperation({
+    summary: "列出简历",
+    description:
+      "包含isDefault与deletionPending。删除中记录仍占名额，可对同一ID重试DELETE。",
+  })
   @Get()
   list(@Req() request: AccountRequest) {
     return this.repo.list(request.account.id);
@@ -112,7 +116,19 @@ export class ResumeController {
   analyze(@Req() req: AccountRequest, @Param("id") id: string) {
     return this.ai.analyze(req.account.id, id);
   }
-  @ApiOperation({ summary: "删除整份简历" })
+  @ApiOperation({
+    summary: "设置默认简历",
+    description: "幂等设置本人未删除简历，返回defaultId；删除中记录返回404。",
+  })
+  @Put(":id/default")
+  setDefault(@Req() req: AccountRequest, @Param("id") id: string) {
+    return this.service.setDefault(req.account.id, id);
+  }
+  @ApiOperation({
+    summary: "删除整份简历，删除中可重复请求重试",
+    description:
+      "须提交confirmation=DELETE。先持久化标记，再清文件，最后事务清记录与默认引用；成功返回ok及defaultId，文件失败返回E_DELETE_FILES，不释放名额。",
+  })
   @Delete(":id")
   @ApiJsonBody(deleteConfirmation)
   remove(

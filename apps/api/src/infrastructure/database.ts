@@ -48,14 +48,14 @@ export class OracleStore {
   async transaction<T>(fn: (runner: QueryRunner) => Promise<T>): Promise<T> {
     await this.ready();
     const runner = this.source.createQueryRunner();
-    await runner.connect();
-    await runner.startTransaction();
     try {
+      await runner.connect();
+      await runner.startTransaction();
       const result = await fn(runner);
       await runner.commitTransaction();
       return result;
     } catch (error) {
-      await runner.rollbackTransaction();
+      if (runner.isTransactionActive) await runner.rollbackTransaction();
       throw error;
     } finally {
       await runner.release();

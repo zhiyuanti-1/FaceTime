@@ -1,4 +1,4 @@
-import { existsSync, readdirSync, readFileSync } from "node:fs";
+﻿import { existsSync, readdirSync, readFileSync } from "node:fs";
 import { join, relative } from "node:path";
 import ts from "typescript";
 import { format } from "prettier";
@@ -43,7 +43,7 @@ function assess(name, count) {
     );
     if (!decision) {
       console.error(
-        `ERROR ${name}: ${count} lines > 300; split or record '组件保留理由: ${name} | concrete reason' in docs/进度.md.`,
+        `ERROR ${name}: ${count} lines > 300; split or record '组件保留理由: ${name} | concrete reason' in docs/进度.md (rule: docs/技术约束.md §12.2).`,
       );
       failures++;
     } else

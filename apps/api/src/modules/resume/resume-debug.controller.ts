@@ -25,7 +25,6 @@ const modelInput = z.strictObject({
     .max(200000)
     .refine((value) => value.trim().length > 0, "请先获取 OCR 原文"),
   prompt: z.string().trim().min(1).max(20000),
-  constrain: z.boolean(),
 });
 
 @ApiExcludeController()
@@ -71,6 +70,6 @@ export class ResumeDebugController {
   @UseGuards(AuthGuard)
   run(@Body() body: unknown) {
     const value = input(modelInput, body);
-    return this.model.debug(value.rawText, value.prompt, value.constrain);
+    return this.model.debug(value.rawText, value.prompt);
   }
 }

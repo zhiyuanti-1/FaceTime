@@ -1,11 +1,11 @@
-param([ValidateSet("All", "Docs", "Model")][string]$Component = "All", [switch]$UseModelMirror)
+﻿param([ValidateSet("All", "Docs", "Model")][string]$Component = "All", [switch]$UseModelMirror, [switch]$UseRuntimeMirror)
 $ErrorActionPreference = "Stop"
 $runtime = Join-Path $PSScriptRoot "../apps/api/data"
 function Get-VerifiedFile($Url, $Path, $Hash) {
   if ((Test-Path -LiteralPath $Path) -and (Get-FileHash -LiteralPath $Path).Hash -eq $Hash) { return }
-  & curl.exe --fail --location --retry 2 --retry-all-errors --connect-timeout 20 --max-time 300 --output "$Path.part" $Url
+  & curl.exe --fail --location --retry 8 --retry-all-errors --continue-at - --speed-time 30 --speed-limit 1024 --connect-timeout 20 --max-time 1800 --output "$Path.part" $Url
   if ($LASTEXITCODE -ne 0 -or (Get-FileHash -LiteralPath "$Path.part").Hash -ne $Hash) {
-    throw "Download or SHA-256 verification failed: $Path"
+    throw "下载或 SHA-256 校验失败： $Path"
   }
   Move-Item -Force -LiteralPath "$Path.part" -Destination $Path
 }
@@ -15,20 +15,26 @@ if ($Component -ne "Model") {
   $jar = Join-Path $docs "knife4j.jar"
   Get-VerifiedFile "https://repo.maven.apache.org/maven2/com/github/xiaoymin/knife4j-openapi3-ui/4.5.0/knife4j-openapi3-ui-4.5.0.jar" $jar "5d50ec693a1ffd5cc3cdc8b924d9a937512fb91854b35c2edc97436f4debdd47"
   & tar.exe -xf $jar -C $docs META-INF/resources
-  if ($LASTEXITCODE -ne 0) { throw "Knife4j extraction failed" }
+  if ($LASTEXITCODE -ne 0) { throw "Knife4j 解压失败" }
 }
 if ($Component -ne "Docs") {
   $models = Join-Path $runtime "models"
   New-Item -ItemType Directory -Force $models | Out-Null
-  $name = "Qwen3.5-0.8B-Q4_K_M.gguf"
   $modelHost = if ($UseModelMirror) { "hf-mirror.com" } else { "huggingface.co" }
-  Get-VerifiedFile "https://$modelHost/unsloth/Qwen3.5-0.8B-GGUF/resolve/6ab461498e2023f6e3c1baea90a8f0fe38ab64d0/$name" (Join-Path $models $name) "bd258782e35f7f458f8aced1adc053e6e92e89bc735ba3be89d38a06121dc517"
-}
-
-if ($Component -ne "Docs") {
-  $llama = Join-Path $runtime "llama"
+  $revision = "bb5d59e06d9551d752d08b292a50eb208b07ab1f"
+  $shards = @(
+    @("qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf", "dfce12e3862a5283ccfb88221b48480e58745165de856439950d0f22590580db"),
+    @("qwen2.5-7b-instruct-q4_k_m-00002-of-00002.gguf", "539cf93f78e887edea1c04e2d7d8cdaca9d01dae9c9025bcb8accbe29df3d72a")
+  )
+  foreach ($shard in $shards) {
+    $name = $shard[0]
+    Get-VerifiedFile "https://$modelHost/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/$revision/$name" (Join-Path $models $name) $shard[1]
+  }
+  $llama = Join-Path $runtime "llama-vulkan"
   New-Item -ItemType Directory -Force $llama | Out-Null
-  $zip = Join-Path $llama "llama-b12034-bin-win-cpu-x64.zip"
-  Get-VerifiedFile "https://github.com/ggml-org/llama.cpp/releases/download/b12034/llama-b12034-bin-win-cpu-x64.zip" $zip "16c38cd9ff7487bf118a37808784245a2d639d844110f21fe9b373aaa40ff511"
+  $zip = Join-Path $llama "llama-b12034-bin-win-vulkan-x64.zip"
+  $runtimeUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b12034/llama-b12034-bin-win-vulkan-x64.zip"
+  if ($UseRuntimeMirror) { $runtimeUrl = "https://ghproxy.net/$runtimeUrl" }
+  Get-VerifiedFile $runtimeUrl $zip "df6ab37942d02aeb8ab3de5984711ea866826a94d50f7a9c5960a0d18a9d4269"
   Expand-Archive -LiteralPath $zip -DestinationPath $llama -Force
 }
