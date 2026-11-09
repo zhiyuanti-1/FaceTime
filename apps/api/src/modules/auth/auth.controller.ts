@@ -1,62 +1,53 @@
-import { ApiOperation, ApiTags } from "@nestjs/swagger";
-import { ApiJsonBody } from "../../infrastructure/api-docs.js";
 import {
   Body,
   Controller,
-  Get,
+  Header,
+  HttpCode,
   Inject,
   Post,
   Req,
   Res,
-  UseGuards,
 } from "@nestjs/common";
 import type { Request, Response } from "express";
-import { loginInput } from "@face/shared";
-import { input, type AccountRequest } from "../../infrastructure/http.js";
-import { config } from "../../config.js";
-import { AuthService } from "./auth.service.js";
-import { AuthGuard, sessionCookie } from "./auth.guard.js";
-@ApiTags("登录与会话")
-@Controller("api/v1/auth")
+import { input } from "../../infrastructure/http.js";
+import { readSessionCookie, sessionCookieName } from "./auth.guard.js";
+import { AuthService, sessionLifetimeMs } from "./auth.service.js";
+import { adminResponse, loginRequest, type AdminResponse } from "./dto/login.dto.js";
+
+const cookieOptions = {
+  httpOnly: true,
+  sameSite: "strict",
+  path: "/",
+} as const;
+
+@Controller("auth")
 export class AuthController {
   constructor(@Inject(AuthService) private readonly auth: AuthService) {}
-  @ApiOperation({ summary: "管理员登录" })
+
   @Post("login")
-  @ApiJsonBody(loginInput)
-  async login(
+  @HttpCode(200)
+  @Header("Cache-Control", "no-store")
+  login(
     @Body() body: unknown,
+    @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
-  ) {
-    const parsed = input(loginInput, body);
-    const result = await this.auth.login(parsed.username, parsed.password);
-    response.cookie("face_session", result.token, {
-      httpOnly: true,
-      sameSite: "lax",
-      secure: false,
-      maxAge: config.AUTH_TTL_HOURS * 3600000,
-      path: "/",
+  ): AdminResponse {
+    const { username, password } = input(loginRequest, body);
+    const { token, account } = this.auth.login(username, password, readSessionCookie(request.cookies));
+    response.cookie(sessionCookieName, token, {
+      ...cookieOptions,
+      maxAge: sessionLifetimeMs,
     });
-    return result.user;
+    return adminResponse.parse(account);
   }
-  @ApiOperation({ summary: "查看当前登录账号" })
-  @UseGuards(AuthGuard)
-  @Get("me")
-  me(@Req() request: AccountRequest) {
-    return request.account;
-  }
-  @ApiOperation({ summary: "退出登录" })
+
   @Post("logout")
-  async logout(
+  @HttpCode(204)
+  logout(
     @Req() request: Request,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const parsed = sessionCookie(request.cookies as unknown);
-    if (parsed.success) await this.auth.logout(parsed.data.face_session);
-    response.clearCookie("face_session", {
-      path: "/",
-      httpOnly: true,
-      sameSite: "lax",
-    });
-    return { ok: true };
+    this.auth.logout(readSessionCookie(request.cookies));
+    response.clearCookie(sessionCookieName, cookieOptions);
   }
 }

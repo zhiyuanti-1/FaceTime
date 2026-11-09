@@ -2,7 +2,6 @@
   "extends": "./apps/web/tsconfig.json",
   "include": [
     "apps/web/src",
-    "apps/web/tests",
     "tests",
     "apps/web/vite.config.ts",
     "apps/api/src/vendor.d.ts"

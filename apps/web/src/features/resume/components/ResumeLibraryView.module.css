@@ -1,0 +1,135 @@
+.page {
+  max-width: 96rem;
+  margin: auto;
+  padding: var(--spaceLarge) var(--spaceMedium) var(--spaceWide);
+}
+
+.library { min-width: 0; }
+.detailPlaceholder { display: none; }
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--spaceSmall);
+  margin-top: var(--spaceMedium);
+}
+.search { flex: 1 1 10rem; }
+
+.hero {
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  min-height: 11rem;
+  overflow: hidden;
+  padding: clamp(var(--spaceMedium), 3vw, var(--spaceWide));
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radiusCard);
+  background: var(--prismHero);
+}
+
+.heroCopy { z-index: 1; }
+.hero h1 { margin: 0; font-size: clamp(2rem, 4vw, 2.75rem); line-height: 1.2; }
+.hero p { margin: var(--spaceSmall) 0 0; max-width: 26ch; color: var(--colorMuted); line-height: 1.6; }
+.heroArt { display: none; }
+.paper {
+  position: relative;
+  display: block;
+  width: 2.8rem;
+  aspect-ratio: 4 / 5;
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radius);
+  background: var(--colorSurface);
+  box-shadow: var(--prismShadow);
+}
+
+.paper::after {
+  position: absolute;
+  inset: 32% 21% 38%;
+  border-block: 2px solid var(--colorBorder);
+  content: "";
+}
+
+.sectionTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--spaceMedium);
+  margin: var(--spaceWide) 0 var(--spaceMedium);
+}
+
+.sectionTitle h2 { margin: 0; font-size: 1.375rem; }
+.sectionTitle p, .message p { color: var(--colorMuted); }
+.sectionTitle p { margin: 0; font-size: .875rem; }
+.message {
+  padding: var(--spaceWide) var(--spaceMedium);
+  border: 1px dashed var(--colorBorder);
+  border-radius: var(--radiusCard);
+  background: var(--colorSurface);
+  text-align: center;
+}
+
+.message h3, .message p { margin: 0 0 var(--spaceSmall); }
+.list { display: grid; gap: var(--spaceSmall); margin: 0; padding: 0; list-style: none; }
+.list > li { min-width: 0; }
+.card {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--spaceMedium);
+  width: 100%;
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radiusPanel);
+  background: var(--colorSurface);
+  padding: var(--spaceMedium);
+  text-align: left;
+}
+
+.card[aria-current="true"], .card:enabled:hover { border-color: var(--colorAccent); }
+.card[aria-current="true"] { background: var(--prismLilac); }
+.cover { display: grid; width: 3.75rem; height: 3.75rem; place-items: center; border-radius: var(--radius); background: var(--prismLilac); }
+.cover .paper { width: 1.65rem; }
+.list > li:nth-child(3n + 2) .cover { background: var(--prismBlue); }
+.list > li:nth-child(3n) .cover { background: var(--prismCoral); }
+.cardBody { display: grid; gap: var(--spaceSmall); overflow-wrap: anywhere; }
+.cardBody strong { font-size: 1.125rem; }
+.cardBody span { color: var(--colorMuted); font-size: .875rem; }
+.cardBody span:last-child { font-size: .75rem; }
+.cardArrow { color: var(--colorAccent); font-size: 1.5rem; }
+
+@media (min-width: 42rem) {
+  .page { padding: var(--spaceLarge); }
+  .heroArt {
+    position: absolute;
+    inset: 0 5% 0 auto;
+    display: grid;
+    width: 33%;
+    place-items: center;
+  }
+  .heroArt .paper { width: 6rem; transform: rotate(12deg); }
+  .heroArt::before, .heroArt::after {
+    position: absolute;
+    width: 6.5rem;
+    aspect-ratio: 4 / 5;
+    border: 1px solid var(--colorSurface);
+    border-radius: var(--radiusPanel);
+    box-shadow: var(--prismShadow);
+    content: "";
+  }
+  .heroArt::before { background: var(--prismLilac); transform: translateX(-2.5rem) rotate(-22deg); }
+  .heroArt::after { z-index: -1; background: var(--colorCoral); transform: translateX(2.5rem) rotate(29deg); }
+}
+
+@media (min-width: 58rem) {
+  .page { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr); gap: var(--spaceLarge); align-items: start; }
+  .detailPlaceholder {
+    display: block;
+    min-height: 24rem;
+    padding: var(--spaceLarge);
+    border: 1px solid var(--colorBorder);
+    border-radius: var(--radiusPanel);
+    background: var(--colorSurface);
+  }
+  .detailPlaceholder h2 { margin-top: 0; font-size: 1.375rem; }
+  .detailPlaceholder p { color: var(--colorMuted); }
+}

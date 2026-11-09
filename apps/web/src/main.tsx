@@ -1,15 +1,8 @@
-import React from "react";
-import ReactDOM from "react-dom/client";
-import { BrowserRouter } from "react-router-dom";
+import { StrictMode } from "react";
+import { createRoot } from "react-dom/client";
 import { App } from "./app/App";
-import "./styles/workbench.css";
+import "./styles/global.css";
 
-const root = document.getElementById("root");
-if (!root) throw new Error("Missing application root");
-ReactDOM.createRoot(root).render(
-  <React.StrictMode>
-    <BrowserRouter>
-      <App />
-    </BrowserRouter>
-  </React.StrictMode>,
-);
+const container = document.getElementById("root");
+if (!container) throw new Error("页面缺少根容器");
+createRoot(container).render(<StrictMode><App /></StrictMode>);

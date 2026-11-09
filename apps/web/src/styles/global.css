@@ -1,6 +1,66 @@
-@import "tailwindcss";
-@import "base.css";
-@import "layout.css";
-@import "../components/preview-ui.css";
-@import "responsive-tablet.css";
-@import "responsive-mobile.css";
+:root {
+  --colorText: #201748; --colorMuted: #655d80; --colorBorder: #e1dcf4;
+  --colorBackground: #f5f4fe; --colorSurface: #fff; --colorAccent: #573ac7;
+  --colorCoral: #ff9c95; --colorDanger: #a1264b; --colorDangerSurface: #fceef3;
+  --spaceSmall: .5rem; --spaceMedium: 1rem; --spaceLarge: 1.5rem; --spaceWide: 2rem;
+  --radius: .5rem; --radiusCard: 1.25rem; --radiusPanel: 1rem;
+  --fontBody: 1rem; --fontTitle: 1.5rem; --pageWidth: 75rem;
+  --panelHeight: 20rem;
+  --prismHero: linear-gradient(116deg, #e5ddff 0%, #f2ecff 55%, #ffe1df 100%);
+  --prismLilac: linear-gradient(125deg, #d9cfff, #f1ebff);
+  --prismCoral: linear-gradient(125deg, #ffc1b9, #ffe9e2);
+  --prismBlue: linear-gradient(125deg, #c5d9ff, #e8eeff);
+  --prismShadow: 0 1rem 2.75rem #30206024;
+  --prismScrim: #20174870;
+  font-family: "Microsoft YaHei", system-ui, sans-serif;
+  font-size: var(--fontBody); color: var(--colorText); background: var(--colorBackground);
+}
+* { box-sizing: border-box; }
+body { margin: 0; }
+a { color: inherit; text-decoration: none; }
+button, summary { font: inherit; }
+button { padding: var(--spaceSmall) var(--spaceMedium); border: 1px solid var(--colorBorder); border-radius: var(--radius); background: var(--colorSurface); color: inherit; cursor: pointer; }
+button:disabled { color: var(--colorMuted); cursor: default; }
+:focus-visible { outline: 2px solid var(--colorAccent); outline-offset: 3px; }
+.prismButton {
+  display: inline-flex;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spaceSmall) var(--spaceMedium);
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radius);
+  background: var(--colorSurface);
+  color: var(--colorAccent);
+  font-weight: 600;
+}
+.prismButton[data-variant="primary"] { border-color: var(--colorAccent); background: var(--colorAccent); color: var(--colorSurface); }
+.prismButton[data-variant="danger"] { border-color: var(--colorDanger); color: var(--colorDanger); }
+.prismButton:enabled:hover, a.prismButton:hover { box-shadow: inset 0 0 0 1px currentColor; }
+.prismButton:disabled { opacity: .6; }
+.prismInput {
+  width: 100%;
+  min-height: 2.75rem;
+  padding: var(--spaceSmall) .75rem;
+  border: 1px solid var(--colorMuted);
+  border-radius: var(--radius);
+  background: var(--colorSurface);
+  color: var(--colorText);
+  font: inherit;
+}
+textarea.prismInput { resize: vertical; }
+.prismNotice { padding: .75rem; border-radius: var(--radius); background: var(--colorDangerSurface); color: var(--colorDanger); }
+.header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spaceLarge); padding: var(--spaceMedium) var(--spaceLarge); border-bottom: 1px solid var(--colorBorder); background: var(--colorSurface); }
+.brand { font-weight: 700; }
+.navigation { display: flex; flex-wrap: wrap; gap: var(--spaceLarge); }
+.navigation a[aria-current="page"], .tabs button[aria-current="page"] { color: var(--colorAccent); font-weight: 700; }
+.account { margin-left: auto; display: flex; align-items: center; gap: var(--spaceMedium); }
+.account details { position: relative; }
+.account summary { cursor: pointer; }
+.accountMenu { position: absolute; right: 0; min-width: 9rem; display: grid; gap: var(--spaceMedium); padding: var(--spaceMedium); border: 1px solid var(--colorBorder); border-radius: var(--radius); background: var(--colorSurface); z-index: 1; }
+.page { max-width: var(--pageWidth); margin: 0 auto; padding: var(--spaceWide) var(--spaceLarge); }
+h1 { font-size: var(--fontTitle); margin: 0 0 var(--spaceLarge); }
+.emptyPanel { min-height: var(--panelHeight); border: 1px dashed var(--colorBorder); border-radius: var(--radius); background: var(--colorSurface); }
+.tabs { display: flex; flex-wrap: wrap; gap: var(--spaceSmall); margin-bottom: var(--spaceLarge); }
+.interviewGrid { display: grid; gap: var(--spaceMedium); }
+@media (min-width: 48rem) { .interviewGrid { grid-template-columns: 1fr 3fr 1fr; } }

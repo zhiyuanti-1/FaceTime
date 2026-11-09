@@ -1,0 +1,22 @@
+.page {
+  display: grid;
+  min-height: 100dvh;
+  place-items: center;
+  padding: var(--spaceLarge);
+  background: var(--prismHero);
+}
+
+.panel {
+  display: grid;
+  gap: var(--spaceMedium);
+  width: min(100%, 26rem);
+  padding: clamp(1.5rem, 6vw, 2.5rem);
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radiusCard);
+  background: var(--colorSurface);
+  box-shadow: var(--prismShadow);
+}
+
+.panel :is(h1, p) { margin: 0; }
+.panel label { display: grid; gap: var(--spaceSmall); }
+.brand { font-weight: 700; color: var(--colorAccent); }

@@ -1,7 +1,7 @@
 import { createHash } from "node:crypto";
 import { describe, it, expect, vi } from "vitest";
 vi.mock("../../apps/api/src/config.js", () => ({ config: {} }));
-import { ResumeAiService } from "../../apps/api/src/modules/resume/resume-ai.service";
+import { ResumeAiService } from "../../apps/api/src/modules/resume/service/resume-ai.service";
 import { resumeAnalysisSchema, aiScoreSchema } from "@face/shared";
 describe("resume and AI evidence boundary", () => {
   const profile = resumeAnalysisSchema.parse({

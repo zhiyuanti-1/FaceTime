@@ -1,64 +1,38 @@
 import { Injectable } from "@nestjs/common";
-import { DataSource, type QueryRunner } from "typeorm";
 import oracledb from "oracledb";
-import { z } from "zod";
 import { config } from "../config.js";
-oracledb.fetchAsString = [oracledb.CLOB];
+import { ApiError } from "./http.js";
+
 @Injectable()
 export class OracleStore {
-  readonly source = new DataSource({
-    type: "oracle",
-    driver: oracledb,
-    username: config.DB_USER,
-    password: config.DB_PASSWORD,
-    connectString: config.DB_CONNECT_STRING,
-    schema: config.DB_SCHEMA,
-    entities: [],
-    synchronize: false,
-    logging: false,
-    extra: { poolMin: 1, poolMax: 4 },
-  });
-  private readiness: Promise<void> | undefined;
-  async ready() {
-    this.readiness ??= this.source.initialize().then(() => undefined);
-    await this.readiness;
-  }
-  async onModuleInit() {
-    await this.ready();
-  }
-  async onModuleDestroy() {
-    if (this.source.isInitialized) await this.source.destroy();
-  }
-  async rows<T>(
-    sql: string,
-    params: unknown[],
-    schema: z.ZodType<T>,
-    runner?: QueryRunner,
-  ): Promise<T[]> {
-    await this.ready();
-    const raw: unknown = await (runner
-      ? runner.query(sql, params)
-      : this.source.query(sql, params));
-    return z.array(schema).parse(raw);
-  }
-  async execute(sql: string, params: unknown[] = [], runner?: QueryRunner) {
-    await this.ready();
-    await (runner ? runner.query(sql, params) : this.source.query(sql, params));
-  }
-  async transaction<T>(fn: (runner: QueryRunner) => Promise<T>): Promise<T> {
-    await this.ready();
-    const runner = this.source.createQueryRunner();
+  async transaction<T>(work: (connection: oracledb.Connection) => Promise<T>) {
+    const { DB_USER, DB_SCHEMA, DB_PASSWORD, DB_CONNECT_STRING } = config;
+    if (!DB_USER || !DB_SCHEMA || !DB_PASSWORD || !DB_CONNECT_STRING) {
+      throw new ApiError("E_DB_CONFIG", "请先配置本机 Oracle 应用连接", 503);
+    }
+    let connection: oracledb.Connection;
     try {
-      await runner.connect();
-      await runner.startTransaction();
-      const result = await fn(runner);
-      await runner.commitTransaction();
+      connection = await oracledb.getConnection({
+        user: DB_USER,
+        password: DB_PASSWORD,
+        connectString: DB_CONNECT_STRING,
+      });
+    } catch {
+      throw new ApiError(
+        "E_DB_CONNECTION",
+        "无法连接本机 Oracle，请检查服务和应用连接配置",
+        503,
+      );
+    }
+    try {
+      const result = await work(connection);
+      await connection.commit();
       return result;
     } catch (error) {
-      if (runner.isTransactionActive) await runner.rollbackTransaction();
+      await connection.rollback();
       throw error;
     } finally {
-      await runner.release();
+      await connection.close();
     }
   }
 }

@@ -1,0 +1,45 @@
+.formBody, .items, .entry {
+  display: grid;
+  min-width: 0;
+  gap: var(--spaceMedium);
+}
+
+.formBody, .items { margin: 0; padding: 0; border: 0; }
+.items { grid-column: 1 / -1; }
+.items legend { padding: 0; margin-bottom: var(--spaceSmall); }
+.items > button, .entry > button { justify-self: start; }
+.item { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: start; gap: var(--spaceSmall); }
+
+.group {
+  padding: var(--spaceMedium);
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radiusPanel);
+  background: var(--colorSurface);
+}
+
+.group > summary { min-height: 2.75rem; align-content: center; font-weight: 700; cursor: pointer; }
+.group > :is(fieldset, label) { margin-top: var(--spaceMedium); }
+.group > button { margin-top: var(--spaceMedium); }
+.group h3 { margin: 0 0 var(--spaceMedium); font-size: 1rem; }
+.grid { display: grid; gap: var(--spaceMedium); }
+.field { display: grid; gap: var(--spaceSmall); min-width: 0; }
+.hint { margin: 0; color: var(--colorMuted); line-height: 1.5; }
+
+.entry {
+  margin: 0;
+  padding: var(--spaceMedium);
+  border: 1px solid var(--colorBorder);
+  border-radius: var(--radius);
+}
+
+.entry + .entry { margin-top: var(--spaceSmall); }
+.detailFields { display: grid; gap: var(--spaceSmall); margin: 0; }
+.detailFields div { display: grid; grid-template-columns: minmax(5rem, 1fr) 2fr; gap: var(--spaceSmall); }
+.detailFields dt { color: var(--colorMuted); }
+.detailFields dd { margin: 0; overflow-wrap: anywhere; white-space: pre-wrap; }
+.detailFields ul { margin: 0; padding-inline-start: 1.25rem; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--spaceSmall); margin-top: var(--spaceLarge); }
+
+@media (min-width: 36rem) {
+  .grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
