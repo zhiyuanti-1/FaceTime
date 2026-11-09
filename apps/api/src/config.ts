@@ -21,6 +21,7 @@ const schema = z.object({
   DEEPSEEK_MODEL: z.string().default("deepseek-flash"),
   DEEPSEEK_TIMEOUT_MS: z.coerce.number().int().positive().default(60000),
   DEEPSEEK_MAX_INPUT_CHARS: z.coerce.number().int().positive().default(80000),
+  LOCAL_RESUME_TIMEOUT_MS: z.coerce.number().int().positive().max(900000).default(360000),
   BAIDU_AK: z.string().default(""),
   BAIDU_SK: z.string().default(""),
   BAIDU_OCR_ENDPOINT: z

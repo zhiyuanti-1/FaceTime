@@ -66,9 +66,7 @@ export const ResumeLibraryView = () => {
           </div>
         ))}
       </div>
-      {state.kind === "closed"
-        ? <aside className={styles.detailPlaceholder}><h2>简历详情</h2><p>选择左侧简历查看详情。</p></aside>
-        : <ResumeDrawer drawer={drawer} />}
+      {state.kind !== "closed" && <ResumeDrawer drawer={drawer} />}
     </section>
   );
 };

@@ -15,6 +15,7 @@
 
 .drawer[open] { display: flex; flex-direction: column; }
 .drawer::backdrop { background: var(--prismScrim); }
+.resizeHandle { display: none; }
 .header {
   display: flex;
   flex: none;
@@ -61,20 +62,37 @@
 
 @media (min-width: 58rem) {
   .drawer {
-    position: sticky;
-    inset: var(--spaceSmall) auto auto;
-    width: 100%;
-    height: auto;
-    min-height: 24rem;
-    max-height: calc(100dvh - var(--spaceMedium));
-    border: 1px solid var(--colorBorder);
-    border-radius: var(--radiusPanel);
+    width: min(100%, var(--resume-drawer-width, clamp(34rem, 58vw, 58rem)));
     background: var(--colorSurface);
     overflow: hidden;
-    box-shadow: none;
   }
-  .body { min-height: 0; }
+  .resizeHandle {
+    position: absolute;
+    z-index: 1;
+    inset: 50% auto auto var(--spaceSmall);
+    display: grid;
+    place-items: center;
+    width: 2.75rem;
+    height: 2.75rem;
+    padding: 0;
+    transform: translateY(-50%);
+    color: var(--colorAccent);
+    box-shadow: var(--prismShadow);
+    cursor: ew-resize;
+    touch-action: none;
+    user-select: none;
+  }
+  .body { min-height: 0; padding-inline-start: 3.75rem; }
   .detailLayout { grid-template-columns: minmax(0, 7.25rem) minmax(0, 1fr); align-items: start; }
   .sectionNav { position: sticky; top: 0; display: grid; overflow: visible; }
   .sectionNav button { white-space: normal; text-align: left; }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawer[open] { animation: drawerEnter 180ms ease-out; }
+}
+
+@keyframes drawerEnter {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
 }

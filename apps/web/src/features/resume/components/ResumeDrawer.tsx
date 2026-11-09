@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef } from "react";
 import { Link } from "react-router-dom";
 import type { useResumeDrawer } from "../hooks/useResumeDrawer";
+import { useResumeDrawerSize } from "../hooks/useResumeDrawerSize";
 import { emptyResume } from "../resume.types";
 import { ResumeDetails } from "./ResumeDetails";
 import { ResumeEditor } from "./ResumeEditor";
@@ -15,22 +16,14 @@ export const ResumeDrawer = ({ drawer }: ResumeDrawerProps) => {
   const { state, pending, error, needsLogin, show, open, save, remove } = drawer;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const heading = useRef<HTMLHeadingElement>(null);
+  const { expanded, ...resizeHandle } = useResumeDrawerSize(dialogRef);
 
   useLayoutEffect(() => {
     const dialog = dialogRef.current;
     if (!dialog) return;
     const trigger = document.activeElement;
-    const wide = window.matchMedia("(min-width: 58rem)");
-    const display = () => {
-      if (dialog.open) dialog.close();
-      if (wide.matches) dialog.show();
-      else dialog.showModal();
-      heading.current?.focus();
-    };
-    display();
-    wide.addEventListener("change", display);
+    dialog.showModal();
     return () => {
-      wide.removeEventListener("change", display);
       dialog.close();
       queueMicrotask(() => {
         if (trigger instanceof HTMLElement && trigger.isConnected) trigger.focus();
@@ -54,6 +47,10 @@ export const ResumeDrawer = ({ drawer }: ResumeDrawerProps) => {
     <dialog className={styles.drawer} ref={dialogRef} aria-labelledby="resumeDrawerTitle"
       onKeyDown={(event) => { if (event.key === "Escape") { event.preventDefault(); close(); } }}
       onCancel={(event) => { event.preventDefault(); close(); }}>
+      <button className={styles.resizeHandle} type="button" aria-label={expanded ? "还原抽屉宽度" : "展开抽屉至全屏"}
+        aria-pressed={expanded} title="拖动调整宽度，点击切换全屏" {...resizeHandle}>
+        <span aria-hidden="true">{expanded ? "→" : "←"}</span>
+      </button>
       <header className={styles.header}>
         <h2 id="resumeDrawerTitle" ref={heading} tabIndex={-1}>{title}</h2>
         <button className="prismButton" type="button" disabled={pending} onClick={close}>关闭</button>

@@ -1,6 +1,7 @@
 import { resumeModelFields, type ResumeFields } from "@face/shared";
 import { Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
+import { config } from "../config.js";
 import { ApiError } from "../infrastructure/http.js";
 
 const completion = z.object({
@@ -134,6 +135,7 @@ export class LocalResumeModel {
   private async generate(rawText: string, prompt: string) {
     if (this.running)
       throw new ApiError("E_LOCAL_BUSY", "本机模型正在处理另一份简历", 409);
+    const deadline = AbortSignal.timeout(config.LOCAL_RESUME_TIMEOUT_MS);
     this.running = true;
     try {
       let payload: unknown;
@@ -143,7 +145,7 @@ export class LocalResumeModel {
           {
             method: "POST",
             redirect: "error",
-            signal: AbortSignal.timeout(180_000),
+            signal: deadline,
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
               model: this.modelName,
@@ -177,13 +179,15 @@ export class LocalResumeModel {
         payload = await response.json();
       } catch (error) {
         if (error instanceof ApiError) throw error;
-        this.logger.warn(
-          error instanceof Error && error.name === "TimeoutError"
-            ? "本机模型处理超时"
-            : "无法连接本机模型或读取其响应",
-        );
-        if (error instanceof Error && error.name === "TimeoutError")
-          throw new ApiError("E_LOCAL_TIMEOUT", "本机模型处理超时", 504);
+        if (deadline.aborted) {
+          this.logger.warn(`本机模型达到 ${config.LOCAL_RESUME_TIMEOUT_MS} 毫秒等待上限`);
+          throw new ApiError(
+            "E_LOCAL_TIMEOUT",
+            "本机模型结构化处理超时，可重试或手动录入",
+            504,
+          );
+        }
+        this.logger.warn("无法连接本机模型或读取其响应");
         throw new ApiError(
           "E_LOCAL_UNAVAILABLE",
           "无法读取本机模型响应，请检查 llama-server",

@@ -1,6 +1,8 @@
 import { createHash } from "node:crypto";
 import { describe, it, expect, vi } from "vitest";
-vi.mock("../../apps/api/src/config.js", () => ({ config: {} }));
+vi.mock("../../apps/api/src/config.js", () => ({
+  config: { LOCAL_RESUME_TIMEOUT_MS: 3000 },
+}));
 import { ResumeAiService } from "../../apps/api/src/modules/resume/service/resume-ai.service";
 import { resumeAnalysisSchema, aiScoreSchema } from "@face/shared";
 describe("resume and AI evidence boundary", () => {
