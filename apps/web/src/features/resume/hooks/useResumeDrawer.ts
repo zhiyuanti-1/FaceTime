@@ -7,11 +7,12 @@ import { deleteResume, getResume, saveResume } from "../services/resume-api";
 const actionError = (cause: unknown, fallback: string) => {
   if (cause instanceof HttpError && cause.status === 401) return "登录已失效，请重新登录后再操作。";
   if (cause instanceof HttpError && cause.status === 404) return "这份简历已不存在，请刷新列表。";
+  if (cause instanceof HttpError && cause.status === 409) return "这份简历正在被项目使用，请先在对应项目中更换简历。";
   return fallback;
 };
 
-export const useResumeDrawer = (onSave: (record: ResumeDetail) => void, onRemove: (id: string) => void) => {
-  const [state, setState] = useState<ResumeDrawerState>({ kind: "closed" });
+export const useResumeDrawer = (onSave: (record: ResumeDetail) => void, onRemove: (id: string) => void, openImport = false) => {
+  const [state, setState] = useState<ResumeDrawerState>(openImport ? { kind: "import" } : { kind: "closed" });
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const [needsLogin, setNeedsLogin] = useState(false);

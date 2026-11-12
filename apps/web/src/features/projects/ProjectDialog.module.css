@@ -1,0 +1,10 @@
+.dialog { width: min(calc(100% - var(--spaceWide)), 36rem); max-height: calc(100dvh - var(--spaceWide)); padding: var(--spaceLarge); border: 1px solid var(--colorBorder); border-radius: var(--radiusCard); background: var(--colorSurface); color: var(--colorText); box-shadow: var(--prismShadow); }
+.dialog::backdrop { background: var(--prismScrim); }
+.heading { display: flex; align-items: center; justify-content: space-between; gap: var(--spaceMedium); }
+.heading h2 { margin: 0; font-size: var(--fontTitle); }
+.heading button { min-width: 2.75rem; min-height: 2.75rem; padding: var(--spaceSmall); }
+.form { display: grid; gap: var(--spaceMedium); }
+.form label { display: grid; gap: var(--spaceSmall); font-weight: 600; }
+.form p { margin: 0; }
+.intro { color: var(--colorMuted); line-height: 1.65; }
+.actions { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: var(--spaceSmall); margin-top: var(--spaceMedium); }

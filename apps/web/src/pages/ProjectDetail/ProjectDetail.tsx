@@ -1,8 +1,7 @@
+import { useParams } from "react-router-dom";
 import { ProjectDetailShell } from "../../features/projects/ProjectDetailShell";
 
-export const ProjectDetail = () => (
-  <section className="page">
-    <h1>项目详情</h1>
-    <ProjectDetailShell />
-  </section>
-);
+export function ProjectDetail() {
+  const { id = "" } = useParams();
+  return <ProjectDetailShell key={id} id={id} />;
+}

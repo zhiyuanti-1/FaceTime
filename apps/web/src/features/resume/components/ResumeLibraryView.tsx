@@ -1,4 +1,4 @@
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { useResumeDrawer } from "../hooks/useResumeDrawer";
 import { useResumeLibrary } from "../hooks/useResumeLibrary";
@@ -15,9 +15,15 @@ export const ResumeLibraryView = () => {
   const drawer = useResumeDrawer(library.update, (id) => {
     library.remove(id);
     requestAnimationFrame(() => newButton.current?.focus());
-  });
+  }, search.get("import") === "1");
   const { list } = library;
   const { state } = drawer;
+  useEffect(() => {
+    if (state.kind !== "closed" || !search.has("import")) return;
+    const next = new URLSearchParams(search);
+    next.delete("import");
+    setSearch(next, { replace: true });
+  }, [search, setSearch, state.kind]);
   const selectedId = "record" in state ? state.record?.id : "id" in state ? state.id : undefined;
   const inProgress = state.kind === "edit" || state.kind === "import" || state.kind === "delete";
   const matches = list.status === "ready" ? list.items.filter(({ fullName, desiredRole }) =>

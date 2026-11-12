@@ -1,0 +1,9 @@
+.back { width: fit-content; color: var(--colorAccent); font-weight: 600; }
+.actions { display: flex; flex-wrap: wrap; gap: var(--spaceSmall); flex: none; }
+.materials { display: grid; gap: var(--spaceMedium); }
+.materials > div { min-width: 0; padding: var(--spaceMedium); border: 1px solid var(--colorBorder); border-radius: var(--radiusPanel); }
+.materials h2 { margin: 0 0 var(--spaceSmall); font-size: 1.125rem; }
+.materials a { color: var(--colorAccent); overflow-wrap: anywhere; }
+.description { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.75; }
+.placeholder { color: var(--colorMuted); }
+@media (min-width: 48rem) { .materials { grid-template-columns: minmax(0, 1fr) minmax(0, 2fr); } }

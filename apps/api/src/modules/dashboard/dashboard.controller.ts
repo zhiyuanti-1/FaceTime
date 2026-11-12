@@ -1,5 +1,16 @@
-import { Controller } from "@nestjs/common";
+import { Controller, Get, Header, Inject, Req, UseGuards } from "@nestjs/common";
+import type { AccountRequest } from "../../infrastructure/http.js";
+import { AuthGuard } from "../auth/auth.guard.js";
+import { DashboardService } from "./dashboard.service.js";
 
-// 工作台路由预留，尚未声明任何业务接口。
 @Controller("dashboard")
-export class DashboardController {}
+@UseGuards(AuthGuard)
+export class DashboardController {
+  constructor(@Inject(DashboardService) private readonly dashboard: DashboardService) {}
+
+  @Get()
+  @Header("Cache-Control", "no-store")
+  overview(@Req() request: AccountRequest) {
+    return this.dashboard.overview(request.account);
+  }
+}

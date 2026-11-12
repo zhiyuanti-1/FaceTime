@@ -3,13 +3,14 @@
   --colorBackground: #f5f4fe; --colorSurface: #fff; --colorAccent: #573ac7;
   --colorCoral: #ff9c95; --colorDanger: #a1264b; --colorDangerSurface: #fceef3;
   --spaceSmall: .5rem; --spaceMedium: 1rem; --spaceLarge: 1.5rem; --spaceWide: 2rem;
-  --radius: .5rem; --radiusCard: 1.25rem; --radiusPanel: 1rem;
+  --radius: .5rem; --radiusCard: 1.25rem; --radiusPanel: 1rem; --radiusPill: 999px;
   --fontBody: 1rem; --fontTitle: 1.5rem; --pageWidth: 75rem;
   --panelHeight: 20rem;
   --prismHero: linear-gradient(116deg, #e5ddff 0%, #f2ecff 55%, #ffe1df 100%);
   --prismLilac: linear-gradient(125deg, #d9cfff, #f1ebff);
   --prismCoral: linear-gradient(125deg, #ffc1b9, #ffe9e2);
   --prismBlue: linear-gradient(125deg, #c5d9ff, #e8eeff);
+  --prismBlueInk: #315a9e;
   --prismShadow: 0 1rem 2.75rem #30206024;
   --prismScrim: #20174870;
   font-family: "Microsoft YaHei", system-ui, sans-serif;
@@ -51,8 +52,11 @@ button:disabled { color: var(--colorMuted); cursor: default; }
 textarea.prismInput { resize: vertical; }
 .prismNotice { padding: .75rem; border-radius: var(--radius); background: var(--colorDangerSurface); color: var(--colorDanger); }
 .header { display: flex; flex-wrap: wrap; align-items: center; gap: var(--spaceLarge); padding: var(--spaceMedium) var(--spaceLarge); border-bottom: 1px solid var(--colorBorder); background: var(--colorSurface); }
-.brand { font-weight: 700; }
+.brand { display: inline-flex; gap: var(--spaceSmall); align-items: center; font-weight: 750; }
+.brandMark { display: inline-block; width: 1.5rem; height: 1.5rem; border-radius: var(--radius); clip-path: polygon(48% 0, 68% 4%, 100% 96%, 62% 79%, 49% 46%, 28% 85%, 0 97%); background: linear-gradient(135deg, var(--colorCoral), var(--colorAccent)); }
 .navigation { display: flex; flex-wrap: wrap; gap: var(--spaceLarge); }
+.navigation a { display: flex; align-items: center; padding: var(--spaceSmall) .75rem; border-radius: var(--radiusPill); }
+.navigation a[aria-current="page"] { background: var(--prismLilac); }
 .navigation a[aria-current="page"], .tabs button[aria-current="page"] { color: var(--colorAccent); font-weight: 700; }
 .account { margin-left: auto; display: flex; align-items: center; gap: var(--spaceMedium); }
 .account details { position: relative; }
@@ -63,4 +67,15 @@ h1 { font-size: var(--fontTitle); margin: 0 0 var(--spaceLarge); }
 .emptyPanel { min-height: var(--panelHeight); border: 1px dashed var(--colorBorder); border-radius: var(--radius); background: var(--colorSurface); }
 .tabs { display: flex; flex-wrap: wrap; gap: var(--spaceSmall); margin-bottom: var(--spaceLarge); }
 .interviewGrid { display: grid; gap: var(--spaceMedium); }
+.workspacePage { display: grid; gap: var(--spaceMedium); max-width: var(--pageWidth); margin-inline: auto; padding: var(--spaceMedium) var(--spaceSmall) var(--spaceWide); }
+.workspacePanel { min-width: 0; padding: var(--spaceMedium); border: 1px solid var(--colorBorder); border-radius: var(--radiusCard); background: var(--colorSurface); }
+.workspaceSectionHeading { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: var(--spaceSmall); margin-bottom: var(--spaceMedium); }
+.workspaceSectionHeading h2 { font-size: 1.25rem; margin: 0; }
+.workspaceSectionHeading a { color: var(--colorAccent); font-size: .875rem; font-weight: 650; }
+.workspaceBanner { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: var(--spaceMedium); border-radius: var(--radiusCard); padding: var(--spaceLarge); background: var(--prismHero); }
+.workspaceBanner > div { min-width: 0; }
+.workspaceBanner h1 { margin: 0 0 var(--spaceSmall); font-size: clamp(2rem, 4vw, 2.875rem); overflow-wrap: anywhere; }
+.workspaceBanner p { margin: 0; color: var(--colorMuted); }
+@media (min-width: 48rem) { .workspacePage { padding: var(--spaceLarge) var(--spaceWide) var(--spaceWide); gap: var(--spaceLarge); } .workspacePanel { padding: var(--spaceLarge); } }
+@media (max-width: 40rem) { .header { gap: var(--spaceSmall); padding: var(--spaceSmall) var(--spaceMedium); } .header > .navigation { width: 100%; order: 3; gap: .25rem; } .navigation a { min-height: 2.75rem; } }
 @media (min-width: 48rem) { .interviewGrid { grid-template-columns: 1fr 3fr 1fr; } }

@@ -145,10 +145,15 @@ export class ResumeRepository {
     return this.db.transaction(async (connection) => {
       await this.lockOwnedResume(connection, ownerId, id);
       await this.clearDetails(connection, id);
-      await connection.execute(
-        `DELETE FROM ${mainTable} WHERE ${ownerFilter}`,
-        { id, ownerId },
-      );
+      try {
+        await connection.execute(`DELETE FROM ${mainTable} WHERE ${ownerFilter}`, { id, ownerId });
+      } catch (error) {
+        if (error instanceof Error && "errorNum" in error && error.errorNum === 2292 &&
+            error.message.includes("FK_FACE_PROJECT_OWNED_RESUME")) {
+          throw new ApiError("E_RESUME_IN_USE", "该简历正在被项目使用，请先更换项目所选简历", 409);
+        }
+        throw error;
+      }
     });
   }
 

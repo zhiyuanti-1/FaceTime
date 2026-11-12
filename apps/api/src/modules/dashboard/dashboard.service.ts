@@ -1,5 +1,14 @@
-import { Injectable } from "@nestjs/common";
+import { dashboardResponse } from "@face/shared";
+import { Inject, Injectable } from "@nestjs/common";
+import type { AccountRequest } from "../../infrastructure/http.js";
+import { ProjectsService } from "../projects/projects.service.js";
 
-// 工作台用例预留。
 @Injectable()
-export class DashboardService {}
+export class DashboardService {
+  constructor(@Inject(ProjectsService) private readonly projects: ProjectsService) {}
+
+  async overview(account: AccountRequest["account"]) {
+    const summary = await this.projects.summarize(account.id);
+    return dashboardResponse.parse({ username: account.username, ...summary });
+  }
+}

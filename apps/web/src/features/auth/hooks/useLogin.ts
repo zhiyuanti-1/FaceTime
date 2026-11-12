@@ -4,6 +4,13 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { HttpError } from "../../../services/http/client";
 import { login } from "../services/auth-api";
 
+function returnPath(next: string | null) {
+  if (!next) return "/";
+  if (next === "/projects" || next === "/resumes" || next === "/resumes?import=1") return next;
+  if (/^\/project\/[a-f\d-]{36}(?:\?tab=(?:resume-job|gap|narrative|questions))?$/i.test(next)) return next;
+  return "/";
+}
+
 export const useLogin = () => {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
@@ -23,7 +30,7 @@ export const useLogin = () => {
     setError("");
     try {
       await login(result.data);
-      void navigate(search.get("next") === "/resumes" ? "/resumes" : "/", { replace: true });
+      void navigate(returnPath(search.get("next")), { replace: true });
     } catch (cause) {
       setError(cause instanceof HttpError && cause.status === 401
         ? "账号或密码错误。"
