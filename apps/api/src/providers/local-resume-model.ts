@@ -3,8 +3,21 @@ import { Injectable, Logger } from "@nestjs/common";
 import { z } from "zod";
 import { config } from "../config.js";
 import { ApiError } from "../infrastructure/http.js";
+import { missingWorkContent, prepareWorkText } from "./resume-work-text.js";
 
 const completion = z.object({
+  timings: z
+    .object({
+      prompt_ms: z.number().nonnegative(),
+      predicted_ms: z.number().nonnegative(),
+    })
+    .optional(),
+  usage: z
+    .object({
+      prompt_tokens: z.number().int().nonnegative(),
+      completion_tokens: z.number().int().nonnegative(),
+    })
+    .optional(),
   choices: z.tuple([
     z.object({
       finish_reason: z.string().nullable(),
@@ -32,7 +45,10 @@ const promptV2 = `你是简历文本结构化抽取器。读取用户提供的�
 输入：
 实习经历
 甲公司 开发实习 2025年01月—2025年03月
-维护订单页面。
+职责：维护订单页面。
+项目成果：
+- 完成权限校验。
+- 减少重复请求。
 项目经历
 乙笔记 2025年04月—2025年06月
 使用Java实现本地搜索。
@@ -41,7 +57,7 @@ const promptV2 = `你是简历文本结构化抽取器。读取用户提供的�
 使用过开发工具，能部署测试服务。
 
 上述片段对应：
-实习/工作经历只有甲公司一项，主要工作内容为["维护订单页面。"]。若原文在该经历下另列“职责”“成果”等子标题，这些子标题下的文字也全部按原文顺序并入同一个“主要工作内容”数组。
+实习/工作经历只有甲公司一项，主要工作内容为["维护订单页面。", "完成权限校验。", "减少重复请求。"]。“项目成果”不是独立项目，不能只输出职责而丢掉其后两条。输入中的这些子标题可能已被预处理去除，正文归属和顺序不变。
 项目经历只有乙笔记一项，职责为["使用Java实现本地搜索。"]，成果为[]，开始为"2025-04"，结束为"2025-06"。
 自我评价为"愿意学习新技术，善于协作。\n使用过开发工具，能部署测试服务。"，末行属于同一段。
 【完整字段模板】
@@ -130,12 +146,13 @@ export class LocalResumeModel {
   private running = false;
 
   readonly defaultPrompt = promptV2;
-  readonly modelName = "Qwen2.5-7B-Instruct";
+  readonly modelName = "Qwen2.5-3B-Instruct";
 
   private async generate(rawText: string, prompt: string) {
     if (this.running)
       throw new ApiError("E_LOCAL_BUSY", "本机模型正在处理另一份简历", 409);
     const deadline = AbortSignal.timeout(config.LOCAL_RESUME_TIMEOUT_MS);
+    const started = performance.now();
     this.running = true;
     try {
       let payload: unknown;
@@ -180,7 +197,9 @@ export class LocalResumeModel {
       } catch (error) {
         if (error instanceof ApiError) throw error;
         if (deadline.aborted) {
-          this.logger.warn(`本机模型达到 ${config.LOCAL_RESUME_TIMEOUT_MS} 毫秒等待上限`);
+          this.logger.warn(
+            `本机模型达到 ${config.LOCAL_RESUME_TIMEOUT_MS} 毫秒等待上限`,
+          );
           throw new ApiError(
             "E_LOCAL_TIMEOUT",
             "本机模型结构化处理超时，可重试或手动录入",
@@ -203,6 +222,9 @@ export class LocalResumeModel {
           502,
         );
       }
+      this.logger.log(
+        `本机推理耗时 ${Math.round(performance.now() - started)} 毫秒，提示处理 ${reply.data.timings?.prompt_ms ?? "未提供"} 毫秒，生成 ${reply.data.timings?.predicted_ms ?? "未提供"} 毫秒，输入 token ${reply.data.usage?.prompt_tokens ?? "未提供"}，输出 token ${reply.data.usage?.completion_tokens ?? "未提供"}，结束原因 ${["stop", "length"].includes(reply.data.choices[0].finish_reason ?? "") ? reply.data.choices[0].finish_reason : "其他"}`,
+      );
       return reply.data.choices[0];
     } finally {
       this.running = false;
@@ -210,21 +232,35 @@ export class LocalResumeModel {
   }
 
   async debug(rawText: string, prompt: string) {
-    const reply = await this.generate(rawText, prompt);
+    const prepared = prepareWorkText(rawText);
+    const reply = await this.generate(prepared.text, prompt);
     const rawOutput = reply.message.content;
     const json = parseModelJson(rawOutput);
     const parsed = resumeModelFields.safeParse(json);
+    const missing = parsed.success
+      ? missingWorkContent(prepared, parsed.data)
+      : 0;
+    this.logger.log(
+      `工作正文检查：已识别 ${prepared.blocks.length} 个条目，移除 ${prepared.removedHeadings} 个子标题，遗漏 ${missing} 段`,
+    );
     return {
       rawOutput,
       finishReason: reply.finish_reason,
       validJson: json !== undefined,
       validFields: parsed.success,
       issues: parsed.success
-        ? []
+        ? missing > 0
+          ? [
+              {
+                field: "实习/工作经历.主要工作内容",
+                code: "work_content_missing",
+              },
+            ]
+          : []
         : parsed.error.issues.map(({ path, code }) => ({
-          field: path.join("."),
-          code,
-        })),
+            field: path.join("."),
+            code,
+          })),
       structured: parsed.success ? parsed.data : null,
     };
   }
@@ -244,6 +280,13 @@ export class LocalResumeModel {
       throw new ApiError(
         "E_LOCAL_OUTPUT",
         "模型输出格式不正确，请重新识别或手动录入",
+        502,
+      );
+    }
+    if (debug.issues.some((issue) => issue.code === "work_content_missing")) {
+      throw new ApiError(
+        "E_LOCAL_CONTENT_MISSING",
+        "模型遗漏工作经历正文，请对照原文重试或手动录入",
         502,
       );
     }

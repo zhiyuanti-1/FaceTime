@@ -3,8 +3,9 @@ $ErrorActionPreference = "Stop"
 $runtime = Join-Path $PSScriptRoot "../apps/api/data"
 function Get-VerifiedFile($Url, $Path, $Hash) {
   if ((Test-Path -LiteralPath $Path) -and (Get-FileHash -LiteralPath $Path).Hash -eq $Hash) { return }
-  & curl.exe --fail --location --retry 8 --retry-all-errors --continue-at - --speed-time 30 --speed-limit 1024 --connect-timeout 20 --max-time 1800 --output "$Path.part" $Url
-  if ($LASTEXITCODE -ne 0 -or (Get-FileHash -LiteralPath "$Path.part").Hash -ne $Hash) {
+  $ProgressPreference = "SilentlyContinue"
+  Invoke-WebRequest -UseBasicParsing -Uri $Url -OutFile "$Path.part" -TimeoutSec 1800
+  if ((Get-FileHash -LiteralPath "$Path.part").Hash -ne $Hash) {
     throw "下载或 SHA-256 校验失败： $Path"
   }
   Move-Item -Force -LiteralPath "$Path.part" -Destination $Path
@@ -21,20 +22,20 @@ if ($Component -ne "Docs") {
   $models = Join-Path $runtime "models"
   New-Item -ItemType Directory -Force $models | Out-Null
   $modelHost = if ($UseModelMirror) { "hf-mirror.com" } else { "huggingface.co" }
-  $revision = "bb5d59e06d9551d752d08b292a50eb208b07ab1f"
-  $shards = @(
-    @("qwen2.5-7b-instruct-q4_k_m-00001-of-00002.gguf", "dfce12e3862a5283ccfb88221b48480e58745165de856439950d0f22590580db"),
-    @("qwen2.5-7b-instruct-q4_k_m-00002-of-00002.gguf", "539cf93f78e887edea1c04e2d7d8cdaca9d01dae9c9025bcb8accbe29df3d72a")
-  )
-  foreach ($shard in $shards) {
-    $name = $shard[0]
-    Get-VerifiedFile "https://$modelHost/Qwen/Qwen2.5-7B-Instruct-GGUF/resolve/$revision/$name" (Join-Path $models $name) $shard[1]
-  }
-  $llama = Join-Path $runtime "llama-vulkan"
+  $revision = "7dabda4d13d513e3e842b20f0d435c732f172cbe"
+  $name = "qwen2.5-3b-instruct-q4_k_m.gguf"
+  Get-VerifiedFile "https://$modelHost/Qwen/Qwen2.5-3B-Instruct-GGUF/resolve/$revision/$name" (Join-Path $models $name) "626b4a6678b86442240e33df819e00132d3ba7dddfe1cdc4fbb18e0a9615c62d"
+  $llama = Join-Path $runtime "llama-cuda"
   New-Item -ItemType Directory -Force $llama | Out-Null
-  $zip = Join-Path $llama "llama-b12034-bin-win-vulkan-x64.zip"
-  $runtimeUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b12034/llama-b12034-bin-win-vulkan-x64.zip"
-  if ($UseRuntimeMirror) { $runtimeUrl = "https://ghproxy.net/$runtimeUrl" }
-  Get-VerifiedFile $runtimeUrl $zip "df6ab37942d02aeb8ab3de5984711ea866826a94d50f7a9c5960a0d18a9d4269"
-  Expand-Archive -LiteralPath $zip -DestinationPath $llama -Force
+  $archives = @(
+    @("llama-b12034-bin-win-cuda-12.4-x64.zip", "9ccf4900c6d41e0e27b58d2f6db190918c89c83e26a62565f325ae5f36a3c0d4"),
+    @("cudart-llama-bin-win-cuda-12.4-x64.zip", "8c79a9b226de4b3cacfd1f83d24f962d0773be79f1e7b75c6af4ded7e32ae1d6")
+  )
+  foreach ($archive in $archives) {
+    $zip = Join-Path $llama $archive[0]
+    $runtimeUrl = "https://github.com/ggml-org/llama.cpp/releases/download/b12034/$($archive[0])"
+    if ($UseRuntimeMirror) { $runtimeUrl = "https://ghproxy.net/$runtimeUrl" }
+    Get-VerifiedFile $runtimeUrl $zip $archive[1]
+    Expand-Archive -LiteralPath $zip -DestinationPath $llama -Force
+  }
 }

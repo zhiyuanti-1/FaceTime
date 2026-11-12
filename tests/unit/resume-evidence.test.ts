@@ -99,12 +99,12 @@ describe("模型 JSON 原值保留", () => {
       createHash("sha256")
         .update(new LocalResumeModel().defaultPrompt)
         .digest("hex"),
-    ).toBe("29017e41a47edaaa3e2a36d46ad26567253da3dafe36813dccafb8dccbae136e");
+    ).toBe("92872f1e5ed2cd30bc851de4d987c5cba93f2adcf808df0a35d58818ff52a9e7");
     const transport = vi
       .spyOn(globalThis, "fetch")
       .mockImplementation(async (_url, options) => {
         expect(JSON.parse(String(options?.body))).toMatchObject({
-          model: "Qwen2.5-7B-Instruct",
+          model: "Qwen2.5-3B-Instruct",
           response_format: {
             type: "json_schema",
             json_schema: {

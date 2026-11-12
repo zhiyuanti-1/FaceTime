@@ -17,7 +17,7 @@ export const resumeDebugPage = String.raw`<!doctype html>
 </style>
 <main>
   <h1>简历提示词调试</h1>
-  <p>PDF 或图片发送给百度 OCR。识别后的文字只发送给本机 Qwen2.5-7B-Instruct。调试内容不会写入简历库。</p>
+  <p>PDF 或图片发送给百度 OCR。识别后的文字只发送给本机 Qwen2.5-3B-Instruct。调试内容不会写入简历库。</p>
   <form id="login" hidden>
     <label>管理员账号 <input name="username" autocomplete="username" required></label>
     <label>密码 <input name="password" type="password" autocomplete="current-password" required></label>
@@ -109,6 +109,7 @@ export const resumeDebugPage = String.raw`<!doctype html>
         data.finishReason === "stop" ? "生成正常结束" : "结束状态：" + (data.finishReason ?? "未知"),
         data.validJson ? "JSON 语法通过" : "JSON 语法不通过",
         data.validFields ? "字段结构通过" : "字段结构不通过",
+        data.issues.some((issue) => issue.code === "work_content_missing") ? "检测到工作正文遗漏，请对照原文核对" : "未检出明确工作正文遗漏（不代表全文完整）",
       ].join(" · "));
       show("validation", JSON.stringify(data.issues, null, 2));
     });
